@@ -18,11 +18,13 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // ✅ Handle Input Change
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
   };
 
+  // ✅ Handle Login
   const handleSubmit = async () => {
     try {
       setLoading(true);
@@ -30,7 +32,7 @@ const Login = () => {
 
       const user = await login(form);
 
-      console.log("Logged in user:", user); // 🔥 DEBUG
+      console.log("Logged in user:", user);
 
       // ✅ Remember Me
       if (remember) {
@@ -41,18 +43,22 @@ const Login = () => {
 
       toast.success("Login Successful 🎉");
 
-      // ✅ FIX: REMOVE setTimeout + normalize role
-      const role = user.role?.toLowerCase();
+      // ✅ ROLE BASED REDIRECT (FINAL FIX)
+      const role = user?.role?.toLowerCase();
 
       if (role === "admin") {
-        navigate("/admin/dashboard");
+        navigate("/admin/dashboard", { replace: true });
       } else if (role === "bank") {
-        navigate("/bank/dashboard");
+        navigate("/bank/dashboard", { replace: true });
+      } else if (role === "user") {
+        navigate("/user/dashboard", { replace: true });
       } else {
-        navigate("/");
+        console.warn("Unknown role:", role);
+        navigate("/", { replace: true });
       }
 
     } catch (err) {
+      console.error(err);
       setError("Invalid email or password");
       toast.error("Invalid email or password ❌");
     } finally {
@@ -113,6 +119,7 @@ const Login = () => {
             Sign in to continue
           </p>
 
+          {/* ERROR */}
           {error && (
             <div className="bg-red-100 text-red-600 text-sm p-2 rounded mb-4">
               {error}
@@ -121,12 +128,13 @@ const Login = () => {
 
           {/* EMAIL */}
           <label className="text-sm text-gray-600">Email</label>
-          <div className="flex items-center border rounded-lg px-3 py-3 mt-1 mb-4 bg-gray-50">
+          <div className="flex items-center border rounded-lg px-3 py-3 mt-1 mb-4 bg-gray-50 focus-within:ring-2 focus-within:ring-[#1cc5b7]">
             <FaEnvelope className="text-gray-400" />
             <input
               type="text"
               name="email"
               placeholder="Enter email"
+              value={form.email}
               onChange={handleChange}
               className="ml-2 bg-transparent outline-none w-full text-sm"
             />
@@ -134,19 +142,26 @@ const Login = () => {
 
           {/* PASSWORD */}
           <label className="text-sm text-gray-600">Password</label>
-          <div className="flex items-center border rounded-lg px-3 py-3 mt-1 mb-2 bg-gray-50">
+          <div className="flex items-center border rounded-lg px-3 py-3 mt-1 mb-2 bg-gray-50 focus-within:ring-2 focus-within:ring-[#1cc5b7]">
             <FaLock className="text-gray-400" />
             <input
               type={showPassword ? "text" : "password"}
               name="password"
               placeholder="Enter password"
+              value={form.password}
               onChange={handleChange}
               className="ml-2 bg-transparent outline-none w-full text-sm"
             />
             {showPassword ? (
-              <FaEyeSlash onClick={() => setShowPassword(false)} className="cursor-pointer text-gray-400" />
+              <FaEyeSlash
+                onClick={() => setShowPassword(false)}
+                className="cursor-pointer text-gray-400"
+              />
             ) : (
-              <FaEye onClick={() => setShowPassword(true)} className="cursor-pointer text-gray-400" />
+              <FaEye
+                onClick={() => setShowPassword(true)}
+                className="cursor-pointer text-gray-400"
+              />
             )}
           </div>
 
@@ -166,11 +181,12 @@ const Login = () => {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full py-3 bg-[#0b2a4a] text-white rounded-lg font-medium hover:bg-[#081f36]"
+            className="w-full py-3 bg-[#0b2a4a] text-white rounded-lg font-medium hover:bg-[#081f36] transition"
           >
             {loading ? "Signing in..." : "Sign In →"}
           </button>
 
+          {/* REGISTER */}
           <p className="mt-3 text-sm text-center text-gray-500">
             Don't have an account?{" "}
             <span

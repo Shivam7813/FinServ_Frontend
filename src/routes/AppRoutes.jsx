@@ -1,3 +1,5 @@
+// src/routes/AppRoutes.jsx
+
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -21,15 +23,23 @@ import BankDocuments from "../pages/bank/Documents";
 import Offers from "../pages/bank/Offers";
 import BankReports from "../pages/bank/Reports";
 
+// 🔹 User Pages
+import UserDashboard from "../pages/user/UserDashboard";
+import ApplyLoan from "../pages/user/ApplyLoan";
+import MyApplications from "../pages/user/MyApplications";
+import MyDocuments from "../pages/user/MyDocuments";
+import LoanOffers from "../pages/user/LoanOffers";
+import UserSettings from "../pages/user/UserSettings";
+import LoanStatus from "../pages/user/LoanStatus"; // ✅ CORRECT CASING
+
 const AppRoutes = () => {
   return (
     <Routes>
-
-      {/* Auth */}
+      {/* 🔐 Auth */}
       <Route path="/" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* ADMIN */}
+      {/* ================= ADMIN ================= */}
       <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/loan-cases" element={<ProtectedRoute role="admin"><LoanCases /></ProtectedRoute>} />
       <Route path="/admin/customers" element={<ProtectedRoute role="admin"><Customers /></ProtectedRoute>} />
@@ -38,7 +48,7 @@ const AppRoutes = () => {
       <Route path="/admin/reports" element={<ProtectedRoute role="admin"><Reports /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
 
-      {/* BANK */}
+      {/* ================= BANK ================= */}
       <Route path="/bank/dashboard" element={<ProtectedRoute role="bank"><BankDashboard /></ProtectedRoute>} />
       <Route path="/bank/applications" element={<ProtectedRoute role="bank"><Applications /></ProtectedRoute>} />
       <Route path="/bank/review" element={<ProtectedRoute role="bank"><Review /></ProtectedRoute>} />
@@ -46,9 +56,24 @@ const AppRoutes = () => {
       <Route path="/bank/offers" element={<ProtectedRoute role="bank"><Offers /></ProtectedRoute>} />
       <Route path="/bank/reports" element={<ProtectedRoute role="bank"><BankReports /></ProtectedRoute>} />
 
-      {/* Fallback */}
-      <Route path="*" element={<Login />} />
+      {/* ================= USER ================= */}
+      <Route path="/user/dashboard" element={<ProtectedRoute role="user"><UserDashboard /></ProtectedRoute>} />
+      <Route path="/user/apply-loan" element={<ProtectedRoute role="user"><ApplyLoan /></ProtectedRoute>} />
+      <Route path="/user/applications" element={<ProtectedRoute role="user"><MyApplications /></ProtectedRoute>} />
+      <Route path="/user/documents" element={<ProtectedRoute role="user"><MyDocuments /></ProtectedRoute>} />
+      <Route path="/user/offers" element={<ProtectedRoute role="user"><LoanOffers /></ProtectedRoute>} />
+      <Route path="/user/settings" element={<ProtectedRoute role="user"><UserSettings /></ProtectedRoute>} />
+      <Route path="/user/loan-status" element={<ProtectedRoute role="user"><LoanStatus /></ProtectedRoute>} />
 
+
+
+
+
+
+
+      
+      {/* ❌ Fallback */}
+      <Route path="*" element={<Login />} />
     </Routes>
   );
 };

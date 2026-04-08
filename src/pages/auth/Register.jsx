@@ -171,8 +171,9 @@ const Register = () => {
             className="w-full border rounded-lg px-3 py-3 mt-1 mb-5 bg-gray-50"
           >
             <option value="USER">User</option>
-            <option value="ADMIN">Admin</option>
             <option value="BANK">Bank</option>
+            <option value="ADMIN">Admin</option>
+            <option value="DEALER">Dealer</option>
           </select>
 
           {/* BUTTON */}

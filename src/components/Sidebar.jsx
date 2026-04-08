@@ -18,14 +18,16 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
+  // ✅ Get role safely + normalize
   useEffect(() => {
     try {
       if (user?.role) {
-        setRole(user.role);
+        setRole(user.role.toLowerCase());
       } else {
         const storedUser = localStorage.getItem("user");
         if (storedUser && storedUser !== "undefined") {
-          setRole(JSON.parse(storedUser)?.role || "admin");
+          const parsed = JSON.parse(storedUser);
+          setRole(parsed?.role?.toLowerCase() || "admin");
         }
       }
     } catch (err) {
@@ -34,7 +36,7 @@ export default function Sidebar() {
     }
   }, [user]);
 
-  // ✅ ONLY ADMIN + BANK
+  // 🔥 Role-Based Menu
   const menuConfig = {
     admin: [
       { icon: <LayoutDashboard size={20} />, text: "Dashboard", to: "/admin/dashboard" },
@@ -54,10 +56,22 @@ export default function Sidebar() {
       { icon: <CreditCard size={20} />, text: "Loan Offers", to: "/bank/offers" },
       { icon: <BarChart size={20} />, text: "Reports", to: "/bank/reports" },
     ],
+
+    // ✅ USER MENU (ADDED + FIXED)
+    user: [
+      { icon: <LayoutDashboard size={20} />, text: "Dashboard", to: "/user/dashboard" },
+      { icon: <FileText size={20} />, text: "Apply Loan", to: "/user/apply-loan" },
+      { icon: <ClipboardCheck size={20} />, text: "My Applications", to: "/user/applications" },
+      { icon: <Folder size={20} />, text: "My Documents", to: "/user/documents" },
+      { icon: <CreditCard size={20} />, text: "Loan Offers", to: "/user/offers" },
+      { icon: <BarChart size={20} />, text: "Loan Status", to: "/user/loan-status" }, // ✅ FIXED
+      { icon: <Settings size={20} />, text: "Settings", to: "/user/settings" },
+    ],
   };
 
   const menus = menuConfig[role] || menuConfig.admin;
 
+  // ✅ Logout
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -94,6 +108,7 @@ export default function Sidebar() {
   );
 }
 
+// 🔥 Menu Item Component
 function MenuItem({ icon, text, to }) {
   return (
     <NavLink
