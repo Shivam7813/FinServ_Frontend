@@ -1,5 +1,11 @@
+/// src/routes/AppRoutes.jsx
+
+import { Routes, Route } from "react-router-dom";
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
+
+// ✅ FIXED PATH (IMPORTANT)
+import CreateLoanCase from "../pages/admin/CreateLoanCase";
 
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
@@ -47,6 +53,16 @@ const AppRoutes = () => {
       <Route path="/admin/reports" element={<ProtectedRoute role="admin"><Reports /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
 
+      {/* ✅ FIXED (Protected + Correct import) */}
+      <Route
+        path="/admin/create-loan"
+        element={
+          <ProtectedRoute role="admin">
+            <CreateLoanCase />
+          </ProtectedRoute>
+        }
+      />
+
       {/* ================= BANK ================= */}
       <Route path="/bank/dashboard" element={<ProtectedRoute role="bank"><BankDashboard /></ProtectedRoute>} />
 
@@ -75,8 +91,8 @@ const AppRoutes = () => {
       <Route path="/user/settings" element={<ProtectedRoute role="user"><UserSettings /></ProtectedRoute>} />
       <Route path="/user/loan-status" element={<ProtectedRoute role="user"><LoanStatus /></ProtectedRoute>} />
 
-      {/* ❌ 404 */}
-      <Route path="*" element={<div className="p-6 text-center">404 - Page Not Found</div>} />
+      {/* ❌ Fallback */}
+      <Route path="*" element={<Login />} />
 
     </Routes>
   );

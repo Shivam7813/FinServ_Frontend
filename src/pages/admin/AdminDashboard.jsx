@@ -1,5 +1,7 @@
 // src/pages/admin/AdminDashboard.jsx
+
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ ADD THIS
 import AdminLayout from "../../layouts/AdminLayout";
 import StatCard from "../../components/StatCard";
 import LoanTable from "../../components/LoanTable";
@@ -7,6 +9,7 @@ import LoanTable from "../../components/LoanTable";
 export default function AdminDashboard() {
 
   const [user, setUser] = useState(null);
+  const navigate = useNavigate(); // ✅ ADD THIS
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -16,14 +19,14 @@ export default function AdminDashboard() {
   const getGreeting = () => {
     const hour = new Date().getHours();
 
-      if (hour < 12) return "Good Morning";
-      if (hour < 18) return "Good Afternoon";
-      return "Good Evening";
-    };
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
 
   return (
     <AdminLayout>
-      
+
       {/* Greeting */}
       <h2 className="text-xl font-semibold mb-1">
         {getGreeting()}, {user?.name || "User"}
@@ -33,9 +36,12 @@ export default function AdminDashboard() {
         Here's what's happening with your loan cases today.
       </p>
 
-      {/* Create Button */}
+      {/* ✅ UPDATED BUTTON */}
       <div className="flex justify-end mb-4">
-        <button className="bg-teal-500 text-white px-4 py-2 rounded-lg shadow hover:bg-teal-600 transition">
+        <button
+          onClick={() => navigate("/admin/create-loan")} // ✅ REDIRECT
+          className="bg-teal-500 text-white px-4 py-2 rounded-lg shadow hover:bg-teal-600 transition"
+        >
           + Create New Loan Case
         </button>
       </div>
