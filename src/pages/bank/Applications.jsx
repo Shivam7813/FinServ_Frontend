@@ -1,101 +1,126 @@
 import AdminLayout from "../../layouts/AdminLayout";
+import { useNavigate, useLocation } from "react-router-dom";
+import { applications } from "../../mock/mockData";
 import { useState } from "react";
 
 export default function Applications() {
-  const [applications, setApplications] = useState([
-    {
-      id: 1,
-      name: "Rahul Sharma",
-      amount: 500000,
-      status: "Pending",
-      type: "Home Loan",
-    },
-    {
-      id: 2,
-      name: "Priya Verma",
-      amount: 300000,
-      status: "Under Review",
-      type: "Personal Loan",
-    },
-    {
-      id: 3,
-      name: "Amit Patel",
-      amount: 700000,
-      status: "Approved",
-      type: "Car Loan",
-    },
-    {
-      id: 4,
-      name: "Sneha Joshi",
-      amount: 250000,
-      status: "Rejected",
-      type: "Education Loan",
-    },
-  ]);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [search, setSearch] = useState("");
+
+  // 🔥 Detect page type
+  const isUnderReviewPage = location.pathname.includes("under-review");
+
+  // 🔥 Filter logic (search + route filter)
+  const filteredApps = applications.filter((app) => {
+    const matchesSearch = app.fullName
+      .toLowerCase()
+      .includes(search.toLowerCase());
+
+    if (isUnderReviewPage) {
+      return matchesSearch && app.status === "UNDER_REVIEW";
+    }
+
+    return matchesSearch;
+  });
 
   const getStatusStyle = (status) => {
     switch (status) {
-      case "Pending":
+      case "PENDING":
         return "bg-yellow-100 text-yellow-700";
-      case "Under Review":
+      case "UNDER_REVIEW":
         return "bg-blue-100 text-blue-700";
-      case "Documents Required":
-        return "bg-orange-100 text-orange-700";
-      case "Approved":
+      case "APPROVED":
         return "bg-green-100 text-green-700";
-      case "Rejected":
+      case "REJECTED":
         return "bg-red-100 text-red-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
   };
 
+  const formatStatus = (status) => status.replaceAll("_", " ");
+
   return (
     <AdminLayout>
       <div className="p-4">
-        <h2 className="text-2xl font-semibold mb-4">Loan Applications</h2>
 
-        {/* Table */}
-        <div className="bg-white shadow rounded-xl overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-gray-100 text-gray-600 text-sm">
-              <tr>
-                <th className="p-3">Applicant</th>
-                <th className="p-3">Loan Type</th>
-                <th className="p-3">Amount</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Action</th>
-              </tr>
-            </thead>
+        {/* 🔹 Header */}
+        <h2 className="text-2xl font-semibold mb-4">
+          {isUnderReviewPage ? "Under Review Applications" : "Loan Applications"}
+        </h2>
 
-            <tbody>
-              {applications.map((app) => (
-                <tr key={app.id} className="border-t">
-                  <td className="p-3 font-medium">{app.name}</td>
-                  <td className="p-3">{app.type}</td>
-                  <td className="p-3">₹{app.amount}</td>
+        {/* 🔥 Search */}
+        <div className="mb-5">
+          <input
+            type="text"
+            placeholder="Search applicant..."
+            className="border px-3 py-2 rounded-lg w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-                  {/* Status */}
-                  <td className="p-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
-                        app.status
-                      )}`}
-                    >
-                      {app.status}
-                    </span>
-                  </td>
+        {/* 🔥 List */}
+        <div className="grid gap-4">
 
-                  {/* Action */}
-                  <td className="p-3">
-                    <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
-                      Review
+          {filteredApps.length === 0 ? (
+            <div className="text-center text-gray-500 py-10">
+              No applications found
+            </div>
+          ) : (
+            filteredApps.map((app) => {
+              const isCompleted =
+                app.status === "APPROVED" || app.status === "REJECTED";
+
+              return (
+                <div
+                  key={app.id}
+                  className="bg-white shadow rounded-xl p-4 flex justify-between items-center hover:shadow-md transition"
+                >
+                  {/* 🔹 Left Info */}
+                  <div className="flex items-center gap-3">
+                    {/* Avatar */}
+                    <div className="w-10 h-10 bg-blue-100 text-blue-600 flex items-center justify-center rounded-full font-semibold">
+                      {app.fullName.charAt(0)}
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold">{app.fullName}</h3>
+                      <p className="text-sm text-gray-500">
+                        {app.loanType} • ₹{app.loanAmount}
+                      </p>
+
+                      <span
+                        className={`inline-block mt-2 px-3 py-1 text-xs rounded-full ${getStatusStyle(
+                          app.status
+                        )}`}
+                      >
+                        {formatStatus(app.status)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 🔹 Action */}
+                  {isCompleted ? (
+                    <button className="bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed">
+                      Completed
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        navigate(`/bank/review/${app.id}`)
+                      }
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                    >
+                      Review →
+                    </button>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </AdminLayout>

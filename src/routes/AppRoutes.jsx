@@ -1,6 +1,4 @@
-// src/routes/AppRoutes.jsx
-
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
 import Login from "../pages/auth/Login";
@@ -30,11 +28,12 @@ import MyApplications from "../pages/user/MyApplications";
 import MyDocuments from "../pages/user/MyDocuments";
 import LoanOffers from "../pages/user/LoanOffers";
 import UserSettings from "../pages/user/UserSettings";
-import LoanStatus from "../pages/user/LoanStatus"; // ✅ CORRECT CASING
+import LoanStatus from "../pages/user/LoanStatus";
 
 const AppRoutes = () => {
   return (
     <Routes>
+
       {/* 🔐 Auth */}
       <Route path="/" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -50,8 +49,19 @@ const AppRoutes = () => {
 
       {/* ================= BANK ================= */}
       <Route path="/bank/dashboard" element={<ProtectedRoute role="bank"><BankDashboard /></ProtectedRoute>} />
+
+      {/* 🔥 Applications (All) */}
       <Route path="/bank/applications" element={<ProtectedRoute role="bank"><Applications /></ProtectedRoute>} />
-      <Route path="/bank/review" element={<ProtectedRoute role="bank"><Review /></ProtectedRoute>} />
+
+      {/* 🔥 NEW: Under Review Filter Page */}
+      <Route path="/bank/under-review" element={<ProtectedRoute role="bank"><Applications /></ProtectedRoute>} />
+
+      {/* 🔥 Dynamic Review */}
+      <Route path="/bank/review/:id" element={<ProtectedRoute role="bank"><Review /></ProtectedRoute>} />
+
+      {/* 🔁 Redirect review root */}
+      <Route path="/bank/review" element={<Navigate to="/bank/applications" replace />} />
+
       <Route path="/bank/documents" element={<ProtectedRoute role="bank"><BankDocuments /></ProtectedRoute>} />
       <Route path="/bank/offers" element={<ProtectedRoute role="bank"><Offers /></ProtectedRoute>} />
       <Route path="/bank/reports" element={<ProtectedRoute role="bank"><BankReports /></ProtectedRoute>} />
@@ -65,15 +75,9 @@ const AppRoutes = () => {
       <Route path="/user/settings" element={<ProtectedRoute role="user"><UserSettings /></ProtectedRoute>} />
       <Route path="/user/loan-status" element={<ProtectedRoute role="user"><LoanStatus /></ProtectedRoute>} />
 
+      {/* ❌ 404 */}
+      <Route path="*" element={<div className="p-6 text-center">404 - Page Not Found</div>} />
 
-
-
-
-
-
-      
-      {/* ❌ Fallback */}
-      <Route path="*" element={<Login />} />
     </Routes>
   );
 };
