@@ -1,100 +1,134 @@
 import AdminLayout from "../../layouts/AdminLayout";
+import { applications } from "../../mock/mockData";
 
 export default function Reports() {
-  const stats = {
-    total: 120,
-    approved: 70,
-    rejected: 20,
-    pending: 30,
-  };
+
+  // 🔹 Stats Calculation
+  const total = applications.length;
+
+  const approved = applications.filter(
+    (app) => app.status === "APPROVED"
+  ).length;
+
+  const rejected = applications.filter(
+    (app) => app.status === "REJECTED"
+  ).length;
+
+  const pending = applications.filter(
+    (app) =>
+      app.status === "PENDING" ||
+      app.status === "UNDER_REVIEW"
+  ).length;
+
+  const stats = { total, approved, rejected, pending };
 
   const getPercentage = (value) => {
-    return (value / stats.total) * 100;
+    return total === 0 ? 0 : ((value / total) * 100).toFixed(1);
   };
 
   return (
     <AdminLayout>
       <div className="p-4">
-        <h2 className="text-2xl font-semibold mb-6">Reports & Analytics</h2>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white shadow rounded-xl p-4">
-            <h3 className="text-gray-500 text-sm">Total Applications</h3>
-            <p className="text-2xl font-semibold">{stats.total}</p>
+        {/* 🔹 Header */}
+        <h2 className="text-2xl font-semibold mb-6">
+          Reports & Analytics
+        </h2>
+
+        {/* 🔥 Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+
+          {/* Total */}
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl shadow">
+            <p className="text-sm opacity-80">Total Applications</p>
+            <h3 className="text-2xl font-semibold">{stats.total}</h3>
           </div>
 
-          <div className="bg-white shadow rounded-xl p-4">
-            <h3 className="text-gray-500 text-sm">Approved</h3>
-            <p className="text-2xl font-semibold text-green-600">
+          {/* Approved */}
+          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl shadow">
+            <p className="text-sm opacity-80">Approved</p>
+            <h3 className="text-2xl font-semibold">
               {stats.approved}
+            </h3>
+            <p className="text-xs opacity-80">
+              {getPercentage(stats.approved)}%
             </p>
           </div>
 
-          <div className="bg-white shadow rounded-xl p-4">
-            <h3 className="text-gray-500 text-sm">Rejected</h3>
-            <p className="text-2xl font-semibold text-red-600">
+          {/* Rejected */}
+          <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-xl shadow">
+            <p className="text-sm opacity-80">Rejected</p>
+            <h3 className="text-2xl font-semibold">
               {stats.rejected}
+            </h3>
+            <p className="text-xs opacity-80">
+              {getPercentage(stats.rejected)}%
             </p>
           </div>
 
-          <div className="bg-white shadow rounded-xl p-4">
-            <h3 className="text-gray-500 text-sm">Pending</h3>
-            <p className="text-2xl font-semibold text-yellow-600">
+          {/* Pending */}
+          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white p-4 rounded-xl shadow">
+            <p className="text-sm opacity-80">Pending</p>
+            <h3 className="text-2xl font-semibold">
               {stats.pending}
+            </h3>
+            <p className="text-xs opacity-80">
+              {getPercentage(stats.pending)}%
             </p>
           </div>
+
         </div>
 
-        {/* Simple Bar Visualization */}
+        {/* 🔥 Status Visualization */}
         <div className="bg-white shadow rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="text-lg font-semibold mb-6">
             Application Status Overview
           </h3>
 
           {/* Approved */}
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Approved</span>
-              <span>{stats.approved}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded h-3">
-              <div
-                className="bg-green-500 h-3 rounded"
-                style={{ width: `${getPercentage(stats.approved)}%` }}
-              />
-            </div>
-          </div>
+          <ProgressBar
+            label="Approved"
+            value={stats.approved}
+            percentage={getPercentage(stats.approved)}
+            color="bg-green-500"
+          />
 
           {/* Rejected */}
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span>Rejected</span>
-              <span>{stats.rejected}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded h-3">
-              <div
-                className="bg-red-500 h-3 rounded"
-                style={{ width: `${getPercentage(stats.rejected)}%` }}
-              />
-            </div>
-          </div>
+          <ProgressBar
+            label="Rejected"
+            value={stats.rejected}
+            percentage={getPercentage(stats.rejected)}
+            color="bg-red-500"
+          />
 
           {/* Pending */}
-          <div>
-            <div className="flex justify-between text-sm mb-1">
-              <span>Pending</span>
-              <span>{stats.pending}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded h-3">
-              <div
-                className="bg-yellow-500 h-3 rounded"
-                style={{ width: `${getPercentage(stats.pending)}%` }}
-              />
-            </div>
-          </div>
+          <ProgressBar
+            label="Pending"
+            value={stats.pending}
+            percentage={getPercentage(stats.pending)}
+            color="bg-yellow-500"
+          />
         </div>
       </div>
     </AdminLayout>
+  );
+}
+
+/* 🔥 Reusable Progress Bar */
+function ProgressBar({ label, value, percentage, color }) {
+  return (
+    <div className="mb-5">
+      <div className="flex justify-between text-sm mb-1">
+        <span className="font-medium">{label}</span>
+        <span>{value} ({percentage}%)</span>
+      </div>
+
+      <div className="w-full bg-gray-200 rounded h-3">
+        <div
+          className={`${color} h-3 rounded transition-all duration-500`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
   );
 }

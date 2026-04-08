@@ -1,6 +1,7 @@
 /// src/routes/AppRoutes.jsx
 
 import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
 // ✅ FIXED PATH (IMPORTANT)
@@ -64,8 +65,19 @@ const AppRoutes = () => {
 
       {/* ================= BANK ================= */}
       <Route path="/bank/dashboard" element={<ProtectedRoute role="bank"><BankDashboard /></ProtectedRoute>} />
+
+      {/* 🔥 Applications (All) */}
       <Route path="/bank/applications" element={<ProtectedRoute role="bank"><Applications /></ProtectedRoute>} />
-      <Route path="/bank/review" element={<ProtectedRoute role="bank"><Review /></ProtectedRoute>} />
+
+      {/* 🔥 NEW: Under Review Filter Page */}
+      <Route path="/bank/under-review" element={<ProtectedRoute role="bank"><Applications /></ProtectedRoute>} />
+
+      {/* 🔥 Dynamic Review */}
+      <Route path="/bank/review/:id" element={<ProtectedRoute role="bank"><Review /></ProtectedRoute>} />
+
+      {/* 🔁 Redirect review root */}
+      <Route path="/bank/review" element={<Navigate to="/bank/applications" replace />} />
+
       <Route path="/bank/documents" element={<ProtectedRoute role="bank"><BankDocuments /></ProtectedRoute>} />
       <Route path="/bank/offers" element={<ProtectedRoute role="bank"><Offers /></ProtectedRoute>} />
       <Route path="/bank/reports" element={<ProtectedRoute role="bank"><BankReports /></ProtectedRoute>} />
