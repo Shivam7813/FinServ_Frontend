@@ -51,7 +51,7 @@ export default function Sidebar() {
     bank: [
       { icon: <LayoutDashboard size={20} />, text: "Dashboard", to: "/bank/dashboard" },
       { icon: <FileText size={20} />, text: "Loan Applications", to: "/bank/applications" },
-      { icon: <ClipboardCheck size={20} />, text: "Under Review", to: "/bank/review" },
+      { icon: <ClipboardCheck size={20} />, text: "Under Review", to: "/bank/under-review" },
       { icon: <Folder size={20} />, text: "Documents", to: "/bank/documents" },
       { icon: <CreditCard size={20} />, text: "Loan Offers", to: "/bank/offers" },
       { icon: <BarChart size={20} />, text: "Reports", to: "/bank/reports" },
