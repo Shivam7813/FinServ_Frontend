@@ -1,7 +1,10 @@
-// src/routes/AppRoutes.jsx
+/// src/routes/AppRoutes.jsx
 
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
+
+// ✅ FIXED PATH (IMPORTANT)
+import CreateLoanCase from "../pages/admin/CreateLoanCase";
 
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
@@ -30,11 +33,12 @@ import MyApplications from "../pages/user/MyApplications";
 import MyDocuments from "../pages/user/MyDocuments";
 import LoanOffers from "../pages/user/LoanOffers";
 import UserSettings from "../pages/user/UserSettings";
-import LoanStatus from "../pages/user/LoanStatus"; // ✅ CORRECT CASING
+import LoanStatus from "../pages/user/LoanStatus";
 
 const AppRoutes = () => {
   return (
     <Routes>
+
       {/* 🔐 Auth */}
       <Route path="/" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -47,6 +51,16 @@ const AppRoutes = () => {
       <Route path="/admin/banks" element={<ProtectedRoute role="admin"><Banks /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute role="admin"><Reports /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
+
+      {/* ✅ FIXED (Protected + Correct import) */}
+      <Route
+        path="/admin/create-loan"
+        element={
+          <ProtectedRoute role="admin">
+            <CreateLoanCase />
+          </ProtectedRoute>
+        }
+      />
 
       {/* ================= BANK ================= */}
       <Route path="/bank/dashboard" element={<ProtectedRoute role="bank"><BankDashboard /></ProtectedRoute>} />
@@ -65,15 +79,9 @@ const AppRoutes = () => {
       <Route path="/user/settings" element={<ProtectedRoute role="user"><UserSettings /></ProtectedRoute>} />
       <Route path="/user/loan-status" element={<ProtectedRoute role="user"><LoanStatus /></ProtectedRoute>} />
 
-
-
-
-
-
-
-      
       {/* ❌ Fallback */}
       <Route path="*" element={<Login />} />
+
     </Routes>
   );
 };
