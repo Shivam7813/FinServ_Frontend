@@ -1,45 +1,47 @@
 // src/pages/user/LoanStatus.jsx
 
 import { useEffect, useState } from "react";
-import AdminLayout from "../../layouts/AdminLayout"; // ✅ Using Admin Layout
+import AdminLayout from "../../layouts/AdminLayout";
+
+// ✅ UPDATED SERVICE NAME
+import { getUserApplications } from "../../services/userApplicationService";
 
 export default function LoanStatus() {
   const [applications, setApplications] = useState([]);
 
+  // ✅ FETCH USER-SPECIFIC DATA
   useEffect(() => {
-    const storedApps = JSON.parse(localStorage.getItem("applications"));
+    const fetchData = async () => {
+      const user = JSON.parse(localStorage.getItem("user"));
 
-    if (!storedApps || storedApps.length === 0) {
-      const demoData = [
-        {
-          id: "LN001",
-          carModel: "Hyundai Creta",
-          loanAmount: "800000",
-          tenure: 60,
-          status: "Under Review",
-        },
-        {
-          id: "LN002",
-          carModel: "Maruti Swift",
-          loanAmount: "500000",
-          tenure: 48,
-          status: "Approved",
-        },
-        {
-          id: "LN003",
-          carModel: "Tata Nexon",
-          loanAmount: "650000",
-          tenure: 36,
-          status: "Rejected",
-        },
-      ];
+      if (!user?.name) return;
 
-      localStorage.setItem("applications", JSON.stringify(demoData));
-      setApplications(demoData);
-    } else {
-      setApplications(storedApps);
-    }
+      const data = await getUserApplications(user.name);
+
+      // 🔥 FORMAT DATA (KEEP UI SAME)
+      const formatted = data.map((app, index) => ({
+        id: app.id || `LN00${index + 1}`,
+        carModel: app.loanType || "Car Loan",
+        loanAmount: app.loanAmount,
+        tenure: app.tenure || 60,
+        status: formatStatus(app.status),
+      }));
+
+      setApplications(formatted);
+    };
+
+    fetchData();
   }, []);
+
+  // ✅ FORMAT STATUS (IMPORTANT)
+  const formatStatus = (status) => {
+    if (!status) return "Pending";
+
+    return status
+      .toLowerCase()
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  };
 
   return (
     <AdminLayout>
@@ -50,6 +52,7 @@ export default function LoanStatus() {
           <p className="text-gray-500">No applications found.</p>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+
             {applications.map((app, index) => (
               <div
                 key={index}
@@ -58,10 +61,10 @@ export default function LoanStatus() {
                 {/* Header */}
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-semibold text-lg">
-                    {app.carModel || "Car Loan"}
+                    {app.carModel}
                   </h3>
                   <span className="text-xs text-gray-400">
-                    {app.id || `LN00${index + 1}`}
+                    {app.id}
                   </span>
                 </div>
 
@@ -82,7 +85,7 @@ export default function LoanStatus() {
                         : "bg-yellow-100 text-yellow-600"
                     }`}
                   >
-                    {app.status || "Pending"}
+                    {app.status}
                   </span>
                 </div>
 
@@ -100,8 +103,10 @@ export default function LoanStatus() {
                     ></div>
                   </div>
                 </div>
+
               </div>
             ))}
+
           </div>
         )}
       </div>

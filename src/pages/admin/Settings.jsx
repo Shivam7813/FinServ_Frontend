@@ -1,8 +1,24 @@
-// src/pages/admin/Settings.jsx
-
+import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 
+// ✅ SERVICE IMPORT
+import { getSettings } from "../../services/settingsService";
+
 export default function Settings() {
+
+  // ✅ STATE (no UI change)
+  const [settings, setSettings] = useState(null);
+
+  // ✅ FETCH SETTINGS
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const data = await getSettings();
+      setSettings(data);
+    };
+
+    fetchSettings();
+  }, []);
+
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
