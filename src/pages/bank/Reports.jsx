@@ -1,7 +1,21 @@
 import AdminLayout from "../../layouts/AdminLayout";
-import { applications } from "../../mock/mockData";
+import { useEffect, useState } from "react";
+
+// ✅ SERVICE
+import { getApplications } from "../../services/applicationService";
 
 export default function Reports() {
+  const [applications, setApplications] = useState([]);
+
+  // ✅ FETCH DATA
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getApplications();
+      setApplications(data);
+    };
+
+    fetchData();
+  }, []);
 
   // 🔹 Stats Calculation
   const total = applications.length;
@@ -30,12 +44,12 @@ export default function Reports() {
     <AdminLayout>
       <div className="p-4">
 
-        {/* 🔹 Header */}
+        {/* HEADER */}
         <h2 className="text-2xl font-semibold mb-6">
           Reports & Analytics
         </h2>
 
-        {/* 🔥 Stats Cards */}
+        {/* STATS CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
           {/* Total */}
@@ -79,13 +93,12 @@ export default function Reports() {
 
         </div>
 
-        {/* 🔥 Status Visualization */}
+        {/* STATUS VISUALIZATION */}
         <div className="bg-white shadow rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-6">
             Application Status Overview
           </h3>
 
-          {/* Approved */}
           <ProgressBar
             label="Approved"
             value={stats.approved}
@@ -93,7 +106,6 @@ export default function Reports() {
             color="bg-green-500"
           />
 
-          {/* Rejected */}
           <ProgressBar
             label="Rejected"
             value={stats.rejected}
@@ -101,7 +113,6 @@ export default function Reports() {
             color="bg-red-500"
           />
 
-          {/* Pending */}
           <ProgressBar
             label="Pending"
             value={stats.pending}
@@ -114,13 +125,15 @@ export default function Reports() {
   );
 }
 
-/* 🔥 Reusable Progress Bar */
+/* 🔥 Progress Bar */
 function ProgressBar({ label, value, percentage, color }) {
   return (
     <div className="mb-5">
       <div className="flex justify-between text-sm mb-1">
         <span className="font-medium">{label}</span>
-        <span>{value} ({percentage}%)</span>
+        <span>
+          {value} ({percentage}%)
+        </span>
       </div>
 
       <div className="w-full bg-gray-200 rounded h-3">

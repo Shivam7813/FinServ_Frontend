@@ -1,18 +1,38 @@
 import AdminLayout from "../../layouts/AdminLayout";
-import { useState } from "react";
-import { offers as mockOffers, applications } from "../../mock/mockData";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+// ✅ SERVICES
+import { getApplications } from "../../services/applicationService";
+import { getOffers, updateOfferStatus } from "../../services/offerService";
 
 export default function Offers() {
-  const [offers, setOffers] = useState(mockOffers);
+  const [offers, setOffers] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
-  // 🔹 Map applicationId → applicant details
+  const navigate = useNavigate();
+
+  // ✅ FETCH
+  const fetchData = async () => {
+    const apps = await getApplications();
+    const offersData = await getOffers();
+
+    setApplications(apps);
+    setOffers(offersData);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // 🔹 MAP
   const getApplicationDetails = (applicationId) => {
     return applications.find((app) => app.id === applicationId);
   };
 
-  // 🔹 Filter logic
+  // 🔹 FILTER
   const filteredOffers = offers.filter((offer) => {
     const app = getApplicationDetails(offer.applicationId);
     const name = app?.fullName?.toLowerCase() || "";
@@ -41,36 +61,32 @@ export default function Offers() {
 
   const formatStatus = (status) => status.replaceAll("_", " ");
 
-  // 🔹 Send Offer
-  const handleSendOffer = (id) => {
-    const updated = offers.map((offer) =>
-      offer.id === id ? { ...offer, status: "SENT" } : offer
-    );
-    setOffers(updated);
+  // ✅ SEND OFFER
+  const handleSendOffer = async (id) => {
+    await updateOfferStatus(id, "SENT");
+    fetchData();
   };
 
   return (
     <AdminLayout>
       <div className="p-4">
 
-        {/* 🔹 Header */}
+        {/* HEADER */}
         <h2 className="text-2xl font-semibold mb-4">
           Loan Offers
         </h2>
 
-        {/* 🔥 Filters */}
+        {/* FILTERS */}
         <div className="flex flex-col md:flex-row gap-3 mb-5">
 
-          {/* Search */}
           <input
             type="text"
             placeholder="Search applicant..."
-            className="border px-3 py-2 rounded-lg w-full md:w-1/3 focus:ring-2 focus:ring-blue-400 outline-none"
+            className="border px-3 py-2 rounded-lg w-full md:w-1/3"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          {/* Status Filter */}
           <select
             className="border px-3 py-2 rounded-lg w-full md:w-48"
             value={statusFilter}
@@ -84,11 +100,10 @@ export default function Offers() {
           </select>
         </div>
 
-        {/* 🔥 Table */}
+        {/* TABLE */}
         <div className="bg-white shadow rounded-xl overflow-hidden">
           <table className="w-full text-left">
 
-            {/* Header */}
             <thead className="bg-gray-100 text-gray-600 text-sm">
               <tr>
                 <th className="p-3">Applicant</th>
@@ -100,7 +115,6 @@ export default function Offers() {
               </tr>
             </thead>
 
-            {/* Body */}
             <tbody>
               {filteredOffers.length === 0 ? (
                 <tr>
@@ -114,18 +128,11 @@ export default function Offers() {
                     offer.applicationId
                   );
 
-                  const isFinal =
-                    offer.status === "ACCEPTED" ||
-                    offer.status === "REJECTED";
-
                   return (
-                    <tr
-                      key={offer.id}
-                      className="border-t hover:bg-gray-50 transition"
-                    >
+                    <tr key={offer.id} className="border-t hover:bg-gray-50">
 
                       {/* Applicant */}
-                      <td className="p-3 font-medium flex items-center gap-2">
+                      <td className="p-3 flex items-center gap-2">
                         <div className="w-8 h-8 bg-purple-100 text-purple-600 flex items-center justify-center rounded-full text-sm font-semibold">
                           {app?.fullName?.charAt(0) || "U"}
                         </div>
@@ -143,37 +150,34 @@ export default function Offers() {
 
                       {/* Status */}
                       <td className="p-3">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(
-                            offer.status
-                          )}`}
-                        >
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(offer.status)}`}>
                           {formatStatus(offer.status)}
                         </span>
                       </td>
 
-                      {/* Actions */}
+                      {/* ACTIONS */}
                       <td className="p-3 flex gap-2">
-                        <button className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+
+                        {/* 🔥 VIEW */}
+                        <button
+                          onClick={() =>
+                            navigate(`/bank/review/${offer.applicationId}`)
+                          }
+                          className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                        >
                           View
                         </button>
 
+                        {/* SEND */}
                         {offer.status === "DRAFT" && (
                           <button
-                            onClick={() =>
-                              handleSendOffer(offer.id)
-                            }
+                            onClick={() => handleSendOffer(offer.id)}
                             className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
                           >
                             Send
                           </button>
                         )}
 
-                        {isFinal && (
-                          <span className="text-gray-400 text-sm">
-                            Completed
-                          </span>
-                        )}
                       </td>
 
                     </tr>

@@ -1,7 +1,13 @@
 // src/pages/user/MyDocuments.jsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
+
+// ✅ UPDATED SERVICE NAME
+import {
+  getUserDocuments,
+  saveUserDocument,
+} from "../../services/userDocumentService";
 
 export default function MyDocuments() {
   const [documents, setDocuments] = useState({
@@ -14,13 +20,37 @@ export default function MyDocuments() {
     photo: null,
   });
 
-  const handleUpload = (e) => {
-    const { name, files } = e.target;
-    setDocuments({ ...documents, [name]: files[0] });
-  };
+  // ✅ LOAD SAVED DATA
+  useEffect(() => {
+    const fetchDocs = async () => {
+      const data = await getUserDocuments();
 
-  const getStatus = (doc) => {
-    return doc ? "Uploaded ✅" : "Not Uploaded ❌";
+      setDocuments({
+        aadhaar: data.aadhaar || null,
+        pan: data.pan || null,
+        salary: data.salary || null,
+        bank: data.bank || null,
+        address: data.address || null,
+        quotation: data.quotation || null,
+        photo: data.photo || null,
+      });
+    };
+
+    fetchDocs();
+  }, []);
+
+  // ✅ UPLOAD + SAVE
+  const handleUpload = async (e) => {
+    const { name, files } = e.target;
+
+    if (!files[0]) return;
+
+    const updated = await saveUserDocument(name, files[0]);
+
+    setDocuments({
+      ...documents,
+      [name]: updated[name],
+    });
   };
 
   return (
@@ -32,54 +62,13 @@ export default function MyDocuments() {
 
       <div className="bg-white p-6 rounded-lg shadow space-y-4">
 
-        <DocumentRow
-          label="Aadhaar Card"
-          name="aadhaar"
-          file={documents.aadhaar}
-          onChange={handleUpload}
-        />
-
-        <DocumentRow
-          label="PAN Card"
-          name="pan"
-          file={documents.pan}
-          onChange={handleUpload}
-        />
-
-        <DocumentRow
-          label="Salary Slips (3 months)"
-          name="salary"
-          file={documents.salary}
-          onChange={handleUpload}
-        />
-
-        <DocumentRow
-          label="Bank Statement"
-          name="bank"
-          file={documents.bank}
-          onChange={handleUpload}
-        />
-
-        <DocumentRow
-          label="Address Proof"
-          name="address"
-          file={documents.address}
-          onChange={handleUpload}
-        />
-
-        <DocumentRow
-          label="Car Quotation"
-          name="quotation"
-          file={documents.quotation}
-          onChange={handleUpload}
-        />
-
-        <DocumentRow
-          label="Photograph"
-          name="photo"
-          file={documents.photo}
-          onChange={handleUpload}
-        />
+        <DocumentRow label="Aadhaar Card" name="aadhaar" file={documents.aadhaar} onChange={handleUpload} />
+        <DocumentRow label="PAN Card" name="pan" file={documents.pan} onChange={handleUpload} />
+        <DocumentRow label="Salary Slips (3 months)" name="salary" file={documents.salary} onChange={handleUpload} />
+        <DocumentRow label="Bank Statement" name="bank" file={documents.bank} onChange={handleUpload} />
+        <DocumentRow label="Address Proof" name="address" file={documents.address} onChange={handleUpload} />
+        <DocumentRow label="Car Quotation" name="quotation" file={documents.quotation} onChange={handleUpload} />
+        <DocumentRow label="Photograph" name="photo" file={documents.photo} onChange={handleUpload} />
 
       </div>
 
@@ -87,7 +76,8 @@ export default function MyDocuments() {
   );
 }
 
-/* 🔹 Reusable Row Component */
+
+/* 🔹 COMPONENT */
 
 function DocumentRow({ label, name, file, onChange }) {
   return (

@@ -1,18 +1,31 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useNavigate, useLocation } from "react-router-dom";
-import { applications } from "../../mock/mockData";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+// ✅ SERVICE
+import { getApplications } from "../../services/applicationService";
 
 export default function Applications() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [search, setSearch] = useState("");
+  const [applications, setApplications] = useState([]);
 
   // 🔥 Detect page type
   const isUnderReviewPage = location.pathname.includes("under-review");
 
-  // 🔥 Filter logic (search + route filter)
+  // ✅ FETCH DATA
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getApplications();
+      setApplications(data);
+    };
+
+    fetchData();
+  }, []);
+
+  // 🔥 FILTER
   const filteredApps = applications.filter((app) => {
     const matchesSearch = app.fullName
       .toLowerCase()
@@ -46,23 +59,25 @@ export default function Applications() {
     <AdminLayout>
       <div className="p-4">
 
-        {/* 🔹 Header */}
+        {/* HEADER */}
         <h2 className="text-2xl font-semibold mb-4">
-          {isUnderReviewPage ? "Under Review Applications" : "Loan Applications"}
+          {isUnderReviewPage
+            ? "Under Review Applications"
+            : "Loan Applications"}
         </h2>
 
-        {/* 🔥 Search */}
+        {/* SEARCH */}
         <div className="mb-5">
           <input
             type="text"
             placeholder="Search applicant..."
-            className="border px-3 py-2 rounded-lg w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="border px-3 py-2 rounded-lg w-full md:w-1/3"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        {/* 🔥 List */}
+        {/* LIST */}
         <div className="grid gap-4">
 
           {filteredApps.length === 0 ? (
@@ -70,56 +85,47 @@ export default function Applications() {
               No applications found
             </div>
           ) : (
-            filteredApps.map((app) => {
-              const isCompleted =
-                app.status === "APPROVED" || app.status === "REJECTED";
-
-              return (
-                <div
-                  key={app.id}
-                  className="bg-white shadow rounded-xl p-4 flex justify-between items-center hover:shadow-md transition"
-                >
-                  {/* 🔹 Left Info */}
-                  <div className="flex items-center gap-3">
-                    {/* Avatar */}
-                    <div className="w-10 h-10 bg-blue-100 text-blue-600 flex items-center justify-center rounded-full font-semibold">
-                      {app.fullName.charAt(0)}
-                    </div>
-
-                    <div>
-                      <h3 className="font-semibold">{app.fullName}</h3>
-                      <p className="text-sm text-gray-500">
-                        {app.loanType} • ₹{app.loanAmount}
-                      </p>
-
-                      <span
-                        className={`inline-block mt-2 px-3 py-1 text-xs rounded-full ${getStatusStyle(
-                          app.status
-                        )}`}
-                      >
-                        {formatStatus(app.status)}
-                      </span>
-                    </div>
+            filteredApps.map((app) => (
+              <div
+                key={app.id}
+                className="bg-white shadow rounded-xl p-4 flex justify-between items-center hover:shadow-md transition"
+              >
+                {/* LEFT */}
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 text-blue-600 flex items-center justify-center rounded-full font-semibold">
+                    {app.fullName.charAt(0)}
                   </div>
 
-                  {/* 🔹 Action */}
-                  {isCompleted ? (
-                    <button className="bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed">
-                      Completed
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() =>
-                        navigate(`/bank/review/${app.id}`)
-                      }
-                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                  <div>
+                    <h3 className="font-semibold">
+                      {app.fullName}
+                    </h3>
+
+                    <p className="text-sm text-gray-500">
+                      {app.loanType} • ₹{app.loanAmount}
+                    </p>
+
+                    <span
+                      className={`inline-block mt-2 px-3 py-1 text-xs rounded-full ${getStatusStyle(
+                        app.status
+                      )}`}
                     >
-                      Review →
-                    </button>
-                  )}
+                      {formatStatus(app.status)}
+                    </span>
+                  </div>
                 </div>
-              );
-            })
+
+                {/* ✅ ALWAYS REVIEW BUTTON */}
+                <button
+                  onClick={() =>
+                    navigate(`/bank/review/${app.id}`)
+                  }
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                >
+                  Review →
+                </button>
+              </div>
+            ))
           )}
         </div>
       </div>

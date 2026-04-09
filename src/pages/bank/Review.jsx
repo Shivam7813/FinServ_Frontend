@@ -1,27 +1,35 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { applications, documents } from "../../mock/mockData";
+import { useEffect, useState } from "react";
+
+// ✅ SERVICE
+import {
+  getApplicationById,
+  getDocumentsByAppId,
+  updateApplicationStatus,
+} from "../../services/applicationService";
 
 export default function Review() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const application = applications.find(
-    (app) => app.id === Number(id)
-  );
+  const [application, setApplication] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [status, setStatus] = useState("");
 
-  const applicationDocs = documents.filter(
-    (doc) => doc.applicationId === Number(id)
-  );
+  // ✅ FETCH DATA
+  const fetchData = async () => {
+    const app = await getApplicationById(id);
+    const docs = await getDocumentsByAppId(id);
 
-  const [status, setStatus] = useState(
-    application?.status || "UNDER_REVIEW"
-  );
+    setApplication(app);
+    setDocuments(docs);
+    setStatus(app?.status || "UNDER_REVIEW");
+  };
 
-  const isFinal =
-    application?.status === "APPROVED" ||
-    application?.status === "REJECTED";
+  useEffect(() => {
+    fetchData();
+  }, [id]);
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -44,32 +52,16 @@ export default function Review() {
 
   const formatStatus = (status) => status.replaceAll("_", " ");
 
+  // ✅ UPDATE STATUS (PERSIST)
+  const handleUpdate = async (newStatus) => {
+    await updateApplicationStatus(id, newStatus);
+    setStatus(newStatus);
+  };
+
   if (!application) {
     return (
       <AdminLayout>
-        <div className="p-6 text-center">Application not found</div>
-      </AdminLayout>
-    );
-  }
-
-  if (isFinal) {
-    return (
-      <AdminLayout>
-        <div className="p-6 text-center">
-          <h2 className="text-xl font-semibold mb-2">
-            This application is already {formatStatus(application.status)}
-          </h2>
-          <p className="text-gray-500 mb-4">
-            You cannot review completed applications
-          </p>
-
-          <button
-            onClick={() => navigate("/bank/applications")}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Back to Applications
-          </button>
-        </div>
+        <div className="p-6 text-center">Loading...</div>
       </AdminLayout>
     );
   }
@@ -78,7 +70,7 @@ export default function Review() {
     <AdminLayout>
       <div className="p-4 space-y-6">
 
-        {/* 🔙 Back Button */}
+        {/* 🔙 Back */}
         <button
           onClick={() => navigate(-1)}
           className="text-blue-600 hover:underline text-sm"
@@ -130,11 +122,11 @@ export default function Review() {
         <div className="bg-white p-4 rounded-xl shadow">
           <h3 className="font-semibold mb-3">Documents</h3>
 
-          {applicationDocs.length === 0 ? (
+          {documents.length === 0 ? (
             <p className="text-gray-500">No documents available</p>
           ) : (
             <div className="space-y-2">
-              {applicationDocs.map((doc) => (
+              {documents.map((doc) => (
                 <div
                   key={doc.id}
                   className="flex justify-between items-center border p-3 rounded"
@@ -160,28 +152,28 @@ export default function Review() {
 
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => setStatus("APPROVED")}
+              onClick={() => handleUpdate("APPROVED")}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
             >
               Approve
             </button>
 
             <button
-              onClick={() => setStatus("REJECTED")}
+              onClick={() => handleUpdate("REJECTED")}
               className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
             >
               Reject
             </button>
 
             <button
-              onClick={() => setStatus("DOCUMENTS_REQUIRED")}
+              onClick={() => handleUpdate("DOCUMENTS_REQUIRED")}
               className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
             >
               Request Docs
             </button>
 
             <button
-              onClick={() => setStatus("UNDER_REVIEW")}
+              onClick={() => handleUpdate("UNDER_REVIEW")}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
               Reset

@@ -3,44 +3,34 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 
+// ✅ SERVICE
+import {
+  getLoanOffers,
+  saveSelectedOffer,
+  getSelectedOffer,
+} from "../../services/loanOfferService";
+
 export default function LoanOffers() {
   const [offers, setOffers] = useState([]);
   const [selectedOffer, setSelectedOffer] = useState(null);
 
+  // ✅ LOAD DATA
   useEffect(() => {
-    // 🔥 Dummy data (later from API)
-    const data = [
-      {
-        id: 1,
-        bank: "HDFC Bank",
-        interest: "8.5%",
-        tenure: "60 months",
-        emi: "₹16,200",
-        processingFee: "₹2,500",
-      },
-      {
-        id: 2,
-        bank: "ICICI Bank",
-        interest: "8.7%",
-        tenure: "60 months",
-        emi: "₹16,500",
-        processingFee: "₹2,000",
-      },
-      {
-        id: 3,
-        bank: "SBI",
-        interest: "8.3%",
-        tenure: "60 months",
-        emi: "₹15,900",
-        processingFee: "₹1,800",
-      },
-    ];
+    const fetchData = async () => {
+      const data = await getLoanOffers();
+      const saved = await getSelectedOffer();
 
-    setOffers(data);
+      setOffers(data);
+      setSelectedOffer(saved);
+    };
+
+    fetchData();
   }, []);
 
-  const handleSelect = (offer) => {
+  // ✅ SELECT OFFER
+  const handleSelect = async (offer) => {
     setSelectedOffer(offer);
+    await saveSelectedOffer(offer);
   };
 
   return (
@@ -100,7 +90,7 @@ export default function LoanOffers() {
 
       </div>
 
-      {/* Selected Offer Summary */}
+      {/* ✅ SELECTED SUMMARY */}
       {selectedOffer && (
         <div className="mt-6 bg-white p-4 rounded-lg shadow">
 

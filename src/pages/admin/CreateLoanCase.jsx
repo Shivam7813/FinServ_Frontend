@@ -1,11 +1,39 @@
 import { useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 
+// ✅ SERVICE IMPORT
+import { createLoanCase } from "../../services/createLoanService";
+
 export default function CreateLoanCase() {
   const [step, setStep] = useState(1);
 
+  // ✅ ADD FORM STATE (NO UI CHANGE)
+  const [formData, setFormData] = useState({});
+
+  // ✅ HANDLE INPUT CHANGE (GENERIC)
+  const handleChange = (e) => {
+    const { placeholder, value, type, files } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [placeholder || "field_" + Date.now()]:
+        type === "file" ? files[0] : value,
+    }));
+  };
+
   const nextStep = () => setStep((prev) => Math.min(prev + 1, 5));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+
+  // ✅ SUBMIT FUNCTION (NO UI CHANGE)
+  const handleSubmit = async () => {
+    try {
+      await createLoanCase(formData);
+      alert("Loan Case Created ✅");
+    } catch (err) {
+      console.error(err);
+      alert("Error creating loan ❌");
+    }
+  };
 
   return (
     <AdminLayout>
@@ -28,7 +56,6 @@ export default function CreateLoanCase() {
           </div>
         </div>
 
-        {/* PROGRESS BAR */}
         <div className="w-full bg-gray-200 h-2 rounded-full mb-6">
           <div
             className="bg-blue-900 h-2 rounded-full"
@@ -36,7 +63,6 @@ export default function CreateLoanCase() {
           ></div>
         </div>
 
-        {/* STEPS */}
         <div className="flex justify-between text-sm">
           {["Loan Details", "Customer Info", "Vehicle Details", "Documents", "Bank Selection"].map(
             (label, index) => (
@@ -60,7 +86,7 @@ export default function CreateLoanCase() {
       {/* CONTENT */}
       <div className="bg-white p-6 rounded-xl shadow">
 
-        {/* STEP 1 - LOAN DETAILS */}
+        {/* STEP 1 */}
         {step === 1 && (
           <>
             <h2 className="text-lg font-semibold mb-4">Loan Details</h2>
@@ -68,7 +94,7 @@ export default function CreateLoanCase() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm">Loan Type</label>
-                <select className="w-full border p-2 rounded mt-1">
+                <select onChange={handleChange} className="w-full border p-2 rounded mt-1">
                   <option>Auto Loan - New Car</option>
                   <option>Auto Loan - Used Car</option>
                 </select>
@@ -76,12 +102,12 @@ export default function CreateLoanCase() {
 
               <div>
                 <label className="text-sm">Requested Amount</label>
-                <input className="w-full border p-2 rounded mt-1" placeholder="₹ 10,00,000" />
+                <input onChange={handleChange} className="w-full border p-2 rounded mt-1" placeholder="₹ 10,00,000" />
               </div>
 
               <div>
                 <label className="text-sm">Tenure</label>
-                <select className="w-full border p-2 rounded mt-1">
+                <select onChange={handleChange} className="w-full border p-2 rounded mt-1">
                   <option>12 Months</option>
                   <option>36 Months</option>
                   <option>60 Months</option>
@@ -90,40 +116,40 @@ export default function CreateLoanCase() {
 
               <div>
                 <label className="text-sm">Down Payment</label>
-                <input className="w-full border p-2 rounded mt-1" placeholder="₹ 2,00,000" />
+                <input onChange={handleChange} className="w-full border p-2 rounded mt-1" placeholder="₹ 2,00,000" />
               </div>
             </div>
           </>
         )}
 
-        {/* STEP 2 - CUSTOMER INFO */}
+        {/* STEP 2 */}
         {step === 2 && (
           <>
             <h2 className="text-lg font-semibold mb-2">Customer Information</h2>
 
             <div className="grid grid-cols-2 gap-4">
-              <input className="border p-2 rounded" placeholder="Full Name" />
-              <input type="date" className="border p-2 rounded" />
-              <input className="border p-2 rounded" placeholder="PAN Number" />
-              <input className="border p-2 rounded" placeholder="Aadhaar Number" />
-              <input className="border p-2 rounded" placeholder="Mobile Number" />
-              <input className="border p-2 rounded" placeholder="Email" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="Full Name" />
+              <input onChange={handleChange} type="date" className="border p-2 rounded" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="PAN Number" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="Aadhaar Number" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="Mobile Number" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="Email" />
             </div>
           </>
         )}
 
-        {/* STEP 3 - VEHICLE DETAILS */}
+        {/* STEP 3 */}
         {step === 3 && (
           <>
             <h2 className="text-lg font-semibold mb-4">Vehicle Details</h2>
 
             <div className="grid grid-cols-2 gap-4">
-              <input className="border p-2 rounded" placeholder="Car Brand" />
-              <input className="border p-2 rounded" placeholder="Car Model" />
-              <input className="border p-2 rounded" placeholder="On Road Price" />
-              <input className="border p-2 rounded" placeholder="Registration City" />
-              <input className="border p-2 rounded" placeholder="Dealer Name" />
-              <select className="border p-2 rounded">
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="Car Brand" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="Car Model" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="On Road Price" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="Registration City" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="Dealer Name" />
+              <select onChange={handleChange} className="border p-2 rounded">
                 <option>SUV</option>
                 <option>Sedan</option>
                 <option>Hatchback</option>
@@ -132,40 +158,40 @@ export default function CreateLoanCase() {
           </>
         )}
 
-        {/* STEP 4 - DOCUMENTS */}
+        {/* STEP 4 */}
         {step === 4 && (
           <>
             <h2 className="text-lg font-semibold mb-4">Upload Documents</h2>
 
             <div className="grid grid-cols-2 gap-4">
-              <input type="file" className="border p-2 rounded" />
-              <input type="file" className="border p-2 rounded" />
-              <input type="file" className="border p-2 rounded" />
-              <input type="file" className="border p-2 rounded" />
+              <input onChange={handleChange} type="file" className="border p-2 rounded" />
+              <input onChange={handleChange} type="file" className="border p-2 rounded" />
+              <input onChange={handleChange} type="file" className="border p-2 rounded" />
+              <input onChange={handleChange} type="file" className="border p-2 rounded" />
             </div>
           </>
         )}
 
-        {/* STEP 5 - BANK */}
+        {/* STEP 5 */}
         {step === 5 && (
           <>
             <h2 className="text-lg font-semibold mb-4">Bank Selection</h2>
 
             <div className="grid grid-cols-2 gap-4">
-              <select className="border p-2 rounded">
+              <select onChange={handleChange} className="border p-2 rounded">
                 <option>HDFC Bank</option>
                 <option>ICICI Bank</option>
                 <option>SBI</option>
               </select>
 
-              <input className="border p-2 rounded" placeholder="Interest Rate %" />
-              <select className="border p-2 rounded">
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="Interest Rate %" />
+              <select onChange={handleChange} className="border p-2 rounded">
                 <option>12 Months</option>
                 <option>36 Months</option>
                 <option>60 Months</option>
               </select>
 
-              <input className="border p-2 rounded" placeholder="EMI Estimate" />
+              <input onChange={handleChange} className="border p-2 rounded" placeholder="EMI Estimate" />
             </div>
           </>
         )}
@@ -181,13 +207,12 @@ export default function CreateLoanCase() {
           </button>
 
           <button
-            onClick={nextStep}
+            onClick={step === 5 ? handleSubmit : nextStep}
             className="bg-blue-900 text-white px-6 py-2 rounded-lg"
           >
             {step === 5 ? "Submit" : "Save & Continue →"}
           </button>
         </div>
-
       </div>
     </AdminLayout>
   );

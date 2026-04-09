@@ -1,18 +1,54 @@
-// src/pages/admin/Documents.jsx 
-
+import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 
+// ❌ REMOVE MOCK
+// import { applications, documents } from "../../mock/mockData";
+
+// ✅ ADD SERVICE
+import {
+  getApplications,
+  getDocuments,
+} from "../../services/documentService";
+
 export default function Documents() {
+  const [applications, setApplications] = useState([]);
+  const [documents, setDocuments] = useState([]);
+
+  // ✅ FETCH DATA
+  useEffect(() => {
+    const fetchData = async () => {
+      const apps = await getApplications();
+      const docs = await getDocuments();
+
+      setApplications(apps);
+      setDocuments(docs);
+    };
+
+    fetchData();
+  }, []);
+
+  // ✅ SAME LOGIC (UNCHANGED)
+  const getDocsByApplication = (appId) => {
+    return documents.filter((doc) => doc.applicationId === appId);
+  };
+
+  const statusStyles = {
+    VERIFIED: "bg-green-100 text-green-600",
+    PENDING: "bg-yellow-100 text-yellow-600",
+    REJECTED: "bg-red-100 text-red-600",
+  };
+
   return (
     <AdminLayout>
       <div className="p-6">
-        {/* Header */}
-        <h1 className="text-2xl font-semibold text-gray-800">Documents</h1>
+
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Documents
+        </h1>
         <p className="text-gray-500 mt-1">
           Upload and verify loan documents.
         </p>
 
-        {/* Top Bar */}
         <div className="flex justify-between items-center mt-6">
           <div className="flex gap-3 w-full max-w-md">
             <input
@@ -30,137 +66,61 @@ export default function Documents() {
           </button>
         </div>
 
-        {/* Cases */}
         <div className="mt-6 space-y-6">
+          {applications.map((app) => {
+            const appDocs = getDocsByApplication(app.id);
 
-          {/* Case 1 */}
-          <div className="bg-white p-5 rounded-xl shadow">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-blue-600 font-semibold">
-                  AUTO-2024-0124
-                </h3>
-                <p className="text-sm text-gray-500">Rajesh Kumar</p>
+            return (
+              <div
+                key={app.id}
+                className="bg-white p-5 rounded-2xl shadow"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="text-blue-600 font-semibold">
+                      CASE-{app.id}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {app.fullName}
+                    </p>
+                  </div>
+
+                  <p className="text-sm text-gray-400">
+                    {appDocs.length} documents
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {appDocs.length > 0 ? (
+                    appDocs.map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="border rounded-lg p-3 hover:shadow-sm transition"
+                      >
+                        <p className="font-medium">{doc.name}</p>
+                        <p className="text-xs text-gray-400">
+                          {app.submittedAt}
+                        </p>
+
+                        <span
+                          className={`mt-2 inline-block px-2 py-1 text-xs rounded-full ${
+                            statusStyles[doc.status] ||
+                            "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {doc.status}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400 text-sm">
+                      No documents uploaded
+                    </p>
+                  )}
+                </div>
               </div>
-              <p className="text-sm text-gray-400">4 documents</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              {/* Doc Card */}
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">Aadhaar Card</p>
-                <p className="text-xs text-gray-400">15 Jan 2024</p>
-                <span className="mt-2 inline-block bg-green-100 text-green-600 px-2 py-1 text-xs rounded-full">
-                  Verified
-                </span>
-              </div>
-
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">PAN Card</p>
-                <p className="text-xs text-gray-400">15 Jan 2024</p>
-                <span className="mt-2 inline-block bg-green-100 text-green-600 px-2 py-1 text-xs rounded-full">
-                  Verified
-                </span>
-              </div>
-
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">Bank Statement</p>
-                <p className="text-xs text-gray-400">15 Jan 2024</p>
-                <span className="mt-2 inline-block bg-yellow-100 text-yellow-600 px-2 py-1 text-xs rounded-full">
-                  Pending
-                </span>
-              </div>
-
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">Salary Slip</p>
-                <p className="text-xs text-gray-400">14 Jan 2024</p>
-                <span className="mt-2 inline-block bg-red-100 text-red-600 px-2 py-1 text-xs rounded-full">
-                  Rejected
-                </span>
-              </div>
-
-            </div>
-          </div>
-
-          {/* Case 2 */}
-          <div className="bg-white p-5 rounded-xl shadow">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-blue-600 font-semibold">
-                  AUTO-2024-0123
-                </h3>
-                <p className="text-sm text-gray-500">Priya Sharma</p>
-              </div>
-              <p className="text-sm text-gray-400">4 documents</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">Aadhaar Card</p>
-                <p className="text-xs text-gray-400">14 Jan 2024</p>
-                <span className="mt-2 inline-block bg-green-100 text-green-600 px-2 py-1 text-xs rounded-full">
-                  Verified
-                </span>
-              </div>
-
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">PAN Card</p>
-                <p className="text-xs text-gray-400">14 Jan 2024</p>
-                <span className="mt-2 inline-block bg-green-100 text-green-600 px-2 py-1 text-xs rounded-full">
-                  Verified
-                </span>
-              </div>
-
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">Bank Statement</p>
-                <p className="text-xs text-gray-400">14 Jan 2024</p>
-                <span className="mt-2 inline-block bg-green-100 text-green-600 px-2 py-1 text-xs rounded-full">
-                  Verified
-                </span>
-              </div>
-
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">ITR</p>
-                <p className="text-xs text-gray-400">14 Jan 2024</p>
-                <span className="mt-2 inline-block bg-green-100 text-green-600 px-2 py-1 text-xs rounded-full">
-                  Verified
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Case 3 */}
-          <div className="bg-white p-5 rounded-xl shadow">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h3 className="text-blue-600 font-semibold">
-                  AUTO-2024-0122
-                </h3>
-                <p className="text-sm text-gray-500">Amit Patel</p>
-              </div>
-              <p className="text-sm text-gray-400">2 documents</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">Aadhaar Card</p>
-                <p className="text-xs text-gray-400">13 Jan 2024</p>
-                <span className="mt-2 inline-block bg-green-100 text-green-600 px-2 py-1 text-xs rounded-full">
-                  Verified
-                </span>
-              </div>
-
-              <div className="border rounded-lg p-3">
-                <p className="font-medium">PAN Card</p>
-                <p className="text-xs text-gray-400">13 Jan 2024</p>
-                <span className="mt-2 inline-block bg-yellow-100 text-yellow-600 px-2 py-1 text-xs rounded-full">
-                  Pending
-                </span>
-              </div>
-            </div>
-          </div>
-
+            );
+          })}
         </div>
       </div>
     </AdminLayout>

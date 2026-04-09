@@ -1,5 +1,4 @@
-// src/pages/admin/Reports.jsx
-
+import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 import {
   BarChart,
@@ -13,46 +12,43 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
 } from "recharts";
 
-const approvalData = [
-  { month: "Aug", approved: 45, rejected: 12},
-  { month: "Sep", approved: 52, rejected: 8 },
-  { month: "Oct", approved: 48, rejected: 14 },
-  { month: "Nov", approved: 60, rejected: 10 },
-  { month: "Dec", approved: 55, rejected: 9 },
-  { month: "Jan", approved: 68, rejected: 7 },
-];
+// ✅ ICONS
+import { BarChart3, TrendingUp, PieChart as PieIcon, Clock } from "lucide-react";
 
-const disbursementData = [
-  { month: "Aug", value: 2.1 },
-  { month: "Sep", value: 2.4 },
-  { month: "Oct", value: 2.2 },
-  { month: "Nov", value: 2.8 },
-  { month: "Dec", value: 2.6 },
-  { month: "Jan", value: 3.2 },
-];
+// ✅ SERVICE IMPORT
+import { getReportsData } from "../../services/reportService";
 
-const bankData = [
-  { name: "HDFC", value: 35 },
-  { name: "ICICI", value: 25 },
-  { name: "SBI", value: 20 },
-  { name: "Axis", value: 12 },
-  { name: "Others", value: 8 },
-];
-
-const tatData = [
-  { name: "HDFC", value: 1.2 },
-  { name: "ICICI", value: 1.8 },
-  { name: "SBI", value: 2.5 },
-  { name: "Axis", value: 1.5 },
-  { name: "Kotak", value: 1.0 },
-];
+// ✅ COLORS
+const COLORS = ["#14b8a6", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 export default function Reports() {
+
+  const [approvalData, setApprovalData] = useState([]);
+  const [disbursementData, setDisbursementData] = useState([]);
+  const [bankData, setBankData] = useState([]);
+  const [tatData, setTatData] = useState([]);
+
+  // ✅ FETCH DATA
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await getReportsData();
+
+      setApprovalData(data.approvalData);
+      setDisbursementData(data.disbursementData);
+      setBankData(data.bankData);
+      setTatData(data.tatData);
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
+
         {/* Header */}
         <div>
           <h1 className="text-2xl font-semibold">MIS Reports</h1>
@@ -63,28 +59,37 @@ export default function Reports() {
 
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           {/* Approval vs Rejection */}
-          <div className="bg-white p-5 rounded-xl shadow">
-            <h2 className="font-semibold mb-4">
-              Approval vs Rejection Ratio
-            </h2>
+          <div className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 size={18} />
+              <h2 className="font-semibold">
+                Approval vs Rejection Ratio
+              </h2>
+            </div>
+
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={approvalData}>
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="approved" fill="#14b8a6" />
-                <Bar dataKey="rejected" fill="#ef4444" />
+                <Legend />
+                <Bar dataKey="approved" fill="#14b8a6" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="rejected" fill="#ef4444" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Disbursement */}
-          <div className="bg-white p-5 rounded-xl shadow">
-            <h2 className="font-semibold mb-4">
-              Disbursement Volume
-            </h2>
+          <div className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition">
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp size={18} />
+              <h2 className="font-semibold">
+                Disbursement Volume
+              </h2>
+            </div>
+
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={disbursementData}>
                 <XAxis dataKey="month" />
@@ -94,19 +99,24 @@ export default function Reports() {
                   type="monotone"
                   dataKey="value"
                   stroke="#1f2937"
-                  strokeWidth={2}
+                  strokeWidth={3}
+                  dot={{ r: 4 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
           {/* Bank Distribution */}
-          <div className="bg-white p-5 rounded-xl shadow">
-            <h2 className="font-semibold mb-4">
-              Bank-wise Distribution
-            </h2>
+          <div className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition">
+            <div className="flex items-center gap-2 mb-4">
+              <PieIcon size={18} />
+              <h2 className="font-semibold">
+                Bank-wise Distribution
+              </h2>
+            </div>
+
             <div className="flex items-center justify-center">
-              <PieChart width={250} height={250}>
+              <PieChart width={280} height={250}>
                 <Pie
                   data={bankData}
                   dataKey="value"
@@ -114,26 +124,32 @@ export default function Reports() {
                   cy="50%"
                   outerRadius={80}
                   innerRadius={50}
+                  paddingAngle={3}
                 >
                   {bankData.map((entry, index) => (
-                    <Cell key={index} />
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
+                <Legend />
               </PieChart>
             </div>
           </div>
 
-          {/* Turnaround Time */}
-          <div className="bg-white p-5 rounded-xl shadow">
-            <h2 className="font-semibold mb-4">
-              Average Turnaround Time
-            </h2>
+          {/* TAT */}
+          <div className="bg-white p-5 rounded-2xl shadow hover:shadow-lg transition">
+            <div className="flex items-center gap-2 mb-4">
+              <Clock size={18} />
+              <h2 className="font-semibold">
+                Average Turnaround Time
+              </h2>
+            </div>
+
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={tatData} layout="vertical">
                 <XAxis type="number" />
                 <YAxis type="category" dataKey="name" />
                 <Tooltip />
-                <Bar dataKey="value" fill="#f59e0b" />
+                <Bar dataKey="value" fill="#f59e0b" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
