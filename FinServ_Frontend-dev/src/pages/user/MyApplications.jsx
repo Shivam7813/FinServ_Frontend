@@ -16,15 +16,15 @@ export default function MyApplications() {
 
         if (!user) return;
 
-        const data = await getUserApplications(user.name);
+        const data = await getUserApplications();
 
-        // 🔥 FORMAT DATA TO MATCH UI
+        // 🔥 FORMAT DATA TO MATCH UI (API-backed)
         const formatted = data.map((app) => ({
-          id: "LN" + app.id,
+          id: app.caseNumber || app.id,
           carModel: app.loanType || "-",
           amount: "₹" + app.loanAmount,
           status: formatStatus(app.status),
-          bank: "Assigned", // (later from backend)
+          bank: app.bank || "—",
         }));
 
         setApplications(formatted);

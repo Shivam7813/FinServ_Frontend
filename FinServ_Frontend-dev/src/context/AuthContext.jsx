@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
+import API from "../api/api";
 
 const AuthContext = createContext();
 
@@ -56,6 +57,23 @@ export const AuthProvider = ({ children }) => {
         role: payload.role?.toLowerCase(),
         token: token,
       };
+
+      // Resolve userId + fullName for loan APIs (GET /api/users)
+      try {
+        localStorage.setItem("token", token);
+        const usersRes = await API.get("/users");
+        const list = usersRes.data || [];
+        const match = list.find(
+          (u) => u.email?.toLowerCase() === userData.email?.toLowerCase()
+        );
+        if (match) {
+          userData.userId = match.userId;
+          userData.fullName = match.fullName;
+          userData.name = match.fullName;
+        }
+      } catch (e) {
+        console.warn("Could not load user profile for loans:", e);
+      }
 
       // 🔥 Store in localStorage
       localStorage.setItem("user", JSON.stringify(userData));

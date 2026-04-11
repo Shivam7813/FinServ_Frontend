@@ -38,12 +38,27 @@ const defaultDocuments = [
   },
 ];
 
-// 🔹 LOAD
-let appData =
-  JSON.parse(localStorage.getItem(APP_KEY)) || defaultApplications;
+// 🔹 LOAD (in-memory; always sync from localStorage before reads/writes)
+let appData = [...defaultApplications];
 
 let documents =
   JSON.parse(localStorage.getItem(DOC_KEY)) || defaultDocuments;
+
+function reloadApplicationsFromStorage() {
+  const raw = localStorage.getItem(APP_KEY);
+  if (!raw) {
+    appData = [...defaultApplications];
+    return;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    appData = Array.isArray(parsed) ? parsed : [...defaultApplications];
+  } catch {
+    appData = [...defaultApplications];
+  }
+}
+
+reloadApplicationsFromStorage();
 
 // 🔹 SAVE
 const saveApplications = () => {
@@ -61,6 +76,7 @@ const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 // ==============================
 export const getApplications = async () => {
   await delay(200);
+  reloadApplicationsFromStorage();
   return [...appData];
 };
 
@@ -69,6 +85,7 @@ export const getApplications = async () => {
 // ==============================
 export const getApplicationById = async (id) => {
   await delay(200);
+  reloadApplicationsFromStorage();
   return appData.find((a) => a.id === Number(id));
 };
 
@@ -78,12 +95,24 @@ export const getApplicationById = async (id) => {
 export const updateApplicationStatus = async (id, status) => {
   await delay(200);
 
+  reloadApplicationsFromStorage();
   appData = appData.map((app) =>
     app.id === Number(id) ? { ...app, status } : app
   );
 
   saveApplications();
   return true;
+};
+
+// ==============================
+// ✅ ADD APPLICATION (apply loan, etc.)
+// ==============================
+export const addApplication = async (application) => {
+  await delay(200);
+  reloadApplicationsFromStorage();
+  appData = [...appData, application];
+  saveApplications();
+  return application;
 };
 
 // ==============================
