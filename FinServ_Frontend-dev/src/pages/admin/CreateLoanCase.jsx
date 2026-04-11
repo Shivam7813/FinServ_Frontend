@@ -1,219 +1,234 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
-
-// ✅ SERVICE IMPORT
 import { createLoanCase } from "../../services/createLoanService";
+import API from "../../api/api";
 
 export default function CreateLoanCase() {
-  const [step, setStep] = useState(1);
+  const [users, setUsers] = useState([]);
+  const [banks, setBanks] = useState([]);
+  const [loadingMeta, setLoadingMeta] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  // ✅ ADD FORM STATE (NO UI CHANGE)
-  const [formData, setFormData] = useState({});
+  const [form, setForm] = useState({
+    userId: "",
+    bankId: "",
+    loanType: "AUTO_NEW_CAR",
+    loanAmount: "",
+    downPayment: "",
+    tenure: "60",
+  });
 
-  // ✅ HANDLE INPUT CHANGE (GENERIC)
-  const handleChange = (e) => {
-    const { placeholder, value, type, files } = e.target;
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoadingMeta(true);
+        const [usersRes, banksRes] = await Promise.all([
+          API.get("/users"),
+          API.get("/banks"),
+        ]);
+        const u = Array.isArray(usersRes.data) ? usersRes.data : [];
+        const b = Array.isArray(banksRes.data) ? banksRes.data : [];
+        setUsers(
+          u.map((row) => ({
+            id: row.userId,
+            label: `${row.fullName || "User"} (${row.email || row.userId})`,
+          }))
+        );
+        setBanks(
+          b.map((row) => ({
+            id: row.id,
+            label: row.bankName || `Bank ${row.id}`,
+          }))
+        );
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingMeta(false);
+      }
+    };
+    load();
+  }, []);
 
-    setFormData((prev) => ({
-      ...prev,
-      [placeholder || "field_" + Date.now()]:
-        type === "file" ? files[0] : value,
-    }));
-  };
+  const setField = (field, value) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, 5));
-  const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const userId = Number(form.userId);
+    const bankId = Number(form.bankId);
+    const loanAmount = Number(form.loanAmount);
+    const downPayment = Number(form.downPayment);
+    const tenure = Number(form.tenure);
 
-  // ✅ SUBMIT FUNCTION (NO UI CHANGE)
-  const handleSubmit = async () => {
+    if (!userId || !bankId) {
+      alert("Select a customer and a bank.");
+      return;
+    }
+    if (!loanAmount || loanAmount <= 0) {
+      alert("Enter a valid loan amount.");
+      return;
+    }
+    if (downPayment < 0 || downPayment >= loanAmount) {
+      alert("Down payment must be less than the loan amount.");
+      return;
+    }
+    if (!tenure || tenure < 6 || tenure > 360 || tenure % 6 !== 0) {
+      alert("Tenure must be between 6 and 360 months, in steps of 6.");
+      return;
+    }
+
     try {
-      await createLoanCase(formData);
-      alert("Loan Case Created ✅");
+      setSubmitting(true);
+      await createLoanCase({
+        loanType: form.loanType,
+        loanAmount,
+        downPayment,
+        tenure,
+        userId,
+        bankId,
+      });
+      alert("Loan case created successfully.");
+      setForm({
+        userId: "",
+        bankId: "",
+        loanType: "AUTO_NEW_CAR",
+        loanAmount: "",
+        downPayment: "",
+        tenure: "60",
+      });
     } catch (err) {
       console.error(err);
-      alert("Error creating loan ❌");
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data ||
+        err.message ||
+        "Could not create loan";
+      alert(typeof msg === "string" ? msg : "Could not create loan");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <AdminLayout>
-      <h1 className="text-2xl font-semibold mb-6">
-        Create New Loan Case
-      </h1>
+      <h1 className="text-2xl font-semibold mb-2">Create New Loan Case</h1>
+      <p className="text-gray-500 mb-6">
+        Creates a loan application in Caryanam_Finserv for an existing customer.
+      </p>
 
-      {/* TOP SECTION */}
-      <div className="bg-white p-6 rounded-xl shadow mb-6">
-        <div className="flex justify-between items-center mb-4">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 rounded-xl shadow max-w-2xl space-y-5"
+      >
+        {loadingMeta ? (
+          <p className="text-gray-500 text-sm">Loading customers and banks…</p>
+        ) : null}
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-1">
+            Customer
+          </label>
+          <select
+            required
+            className="w-full border rounded-lg p-2"
+            value={form.userId}
+            onChange={(e) => setField("userId", e.target.value)}
+          >
+            <option value="">Select customer</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-1">
+            Partner bank
+          </label>
+          <select
+            required
+            className="w-full border rounded-lg p-2"
+            value={form.bankId}
+            onChange={(e) => setField("bankId", e.target.value)}
+          >
+            <option value="">Select bank</option>
+            {banks.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-1">
+            Loan type
+          </label>
+          <select
+            className="w-full border rounded-lg p-2"
+            value={form.loanType}
+            onChange={(e) => setField("loanType", e.target.value)}
+          >
+            <option value="AUTO_NEW_CAR">Auto — new car</option>
+            <option value="AUTO_USED_CAR">Auto — used car</option>
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <p className="text-gray-500 text-sm">Case Number</p>
-            <p className="text-teal-600 font-semibold">
-              AUTO-2024-5736
-            </p>
+            <label className="text-sm font-medium text-gray-700 block mb-1">
+              Loan amount (₹)
+            </label>
+            <input
+              required
+              type="number"
+              min="1"
+              className="w-full border rounded-lg p-2"
+              value={form.loanAmount}
+              onChange={(e) => setField("loanAmount", e.target.value)}
+            />
           </div>
-
-          <div className="text-sm text-gray-500">
-            Step {step} of 5
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">
+              Down payment (₹)
+            </label>
+            <input
+              required
+              type="number"
+              min="1"
+              className="w-full border rounded-lg p-2"
+              value={form.downPayment}
+              onChange={(e) => setField("downPayment", e.target.value)}
+            />
           </div>
         </div>
 
-        <div className="w-full bg-gray-200 h-2 rounded-full mb-6">
-          <div
-            className="bg-blue-900 h-2 rounded-full"
-            style={{ width: `${(step / 5) * 100}%` }}
-          ></div>
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-1">
+            Tenure (months, multiple of 6)
+          </label>
+          <input
+            required
+            type="number"
+            min="6"
+            max="360"
+            step="6"
+            className="w-full border rounded-lg p-2"
+            value={form.tenure}
+            onChange={(e) => setField("tenure", e.target.value)}
+          />
         </div>
 
-        <div className="flex justify-between text-sm">
-          {["Loan Details", "Customer Info", "Vehicle Details", "Documents", "Bank Selection"].map(
-            (label, index) => (
-              <div key={index} className="flex flex-col items-center">
-                <div
-                  className={`w-10 h-10 flex items-center justify-center rounded-full ${
-                    step === index + 1
-                      ? "bg-blue-900 text-white"
-                      : "bg-gray-200 text-gray-500"
-                  }`}
-                >
-                  {index + 1}
-                </div>
-                <p className="mt-2 text-xs">{label}</p>
-              </div>
-            )
-          )}
-        </div>
-      </div>
-
-      {/* CONTENT */}
-      <div className="bg-white p-6 rounded-xl shadow">
-
-        {/* STEP 1 */}
-        {step === 1 && (
-          <>
-            <h2 className="text-lg font-semibold mb-4">Loan Details</h2>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm">Loan Type</label>
-                <select onChange={handleChange} className="w-full border p-2 rounded mt-1">
-                  <option>Auto Loan - New Car</option>
-                  <option>Auto Loan - Used Car</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm">Requested Amount</label>
-                <input onChange={handleChange} className="w-full border p-2 rounded mt-1" placeholder="₹ 10,00,000" />
-              </div>
-
-              <div>
-                <label className="text-sm">Tenure</label>
-                <select onChange={handleChange} className="w-full border p-2 rounded mt-1">
-                  <option>12 Months</option>
-                  <option>36 Months</option>
-                  <option>60 Months</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm">Down Payment</label>
-                <input onChange={handleChange} className="w-full border p-2 rounded mt-1" placeholder="₹ 2,00,000" />
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* STEP 2 */}
-        {step === 2 && (
-          <>
-            <h2 className="text-lg font-semibold mb-2">Customer Information</h2>
-
-            <div className="grid grid-cols-2 gap-4">
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="Full Name" />
-              <input onChange={handleChange} type="date" className="border p-2 rounded" />
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="PAN Number" />
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="Aadhaar Number" />
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="Mobile Number" />
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="Email" />
-            </div>
-          </>
-        )}
-
-        {/* STEP 3 */}
-        {step === 3 && (
-          <>
-            <h2 className="text-lg font-semibold mb-4">Vehicle Details</h2>
-
-            <div className="grid grid-cols-2 gap-4">
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="Car Brand" />
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="Car Model" />
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="On Road Price" />
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="Registration City" />
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="Dealer Name" />
-              <select onChange={handleChange} className="border p-2 rounded">
-                <option>SUV</option>
-                <option>Sedan</option>
-                <option>Hatchback</option>
-              </select>
-            </div>
-          </>
-        )}
-
-        {/* STEP 4 */}
-        {step === 4 && (
-          <>
-            <h2 className="text-lg font-semibold mb-4">Upload Documents</h2>
-
-            <div className="grid grid-cols-2 gap-4">
-              <input onChange={handleChange} type="file" className="border p-2 rounded" />
-              <input onChange={handleChange} type="file" className="border p-2 rounded" />
-              <input onChange={handleChange} type="file" className="border p-2 rounded" />
-              <input onChange={handleChange} type="file" className="border p-2 rounded" />
-            </div>
-          </>
-        )}
-
-        {/* STEP 5 */}
-        {step === 5 && (
-          <>
-            <h2 className="text-lg font-semibold mb-4">Bank Selection</h2>
-
-            <div className="grid grid-cols-2 gap-4">
-              <select onChange={handleChange} className="border p-2 rounded">
-                <option>HDFC Bank</option>
-                <option>ICICI Bank</option>
-                <option>SBI</option>
-              </select>
-
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="Interest Rate %" />
-              <select onChange={handleChange} className="border p-2 rounded">
-                <option>12 Months</option>
-                <option>36 Months</option>
-                <option>60 Months</option>
-              </select>
-
-              <input onChange={handleChange} className="border p-2 rounded" placeholder="EMI Estimate" />
-            </div>
-          </>
-        )}
-
-        {/* BUTTONS */}
-        <div className="flex justify-between mt-6">
-          <button
-            onClick={prevStep}
-            disabled={step === 1}
-            className="px-4 py-2 border rounded-lg disabled:opacity-50"
-          >
-            ← Previous
-          </button>
-
-          <button
-            onClick={step === 5 ? handleSubmit : nextStep}
-            className="bg-blue-900 text-white px-6 py-2 rounded-lg"
-          >
-            {step === 5 ? "Submit" : "Save & Continue →"}
-          </button>
-        </div>
-      </div>
+        <button
+          type="submit"
+          disabled={submitting || loadingMeta}
+          className="bg-blue-900 text-white px-6 py-2 rounded-lg disabled:opacity-50"
+        >
+          {submitting ? "Submitting…" : "Create loan case"}
+        </button>
+      </form>
     </AdminLayout>
   );
 }

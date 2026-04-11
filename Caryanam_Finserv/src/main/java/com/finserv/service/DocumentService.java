@@ -1,13 +1,17 @@
 package com.finserv.service;
 
-import com.finserv.dto.DocumentDashboardDTO;
-import com.finserv.dto.DocumentResponseDTO;
-import com.finserv.enums.DocumentType;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile; // ✅ ADDED
+
+import com.finserv.dto.DocumentDashboardDTO; // ✅ ADDED
+import com.finserv.dto.DocumentResponseDTO;
+import com.finserv.enums.DocumentType;
+
 public interface DocumentService {
+
     // Upload document
     DocumentResponseDTO upload(Long loanId, MultipartFile file, DocumentType documentType);
 
@@ -20,5 +24,10 @@ public interface DocumentService {
     // Update document status
     DocumentResponseDTO updateStatus(Long docId, String status);
 
+    // Dashboard
     List<DocumentDashboardDTO> getDashboard();
+
+    // ✅ ================= PREVIEW METHOD ADDED =================
+    ResponseEntity<Resource> previewDocument(Long id);
+    // ✅ =======================================================
 }

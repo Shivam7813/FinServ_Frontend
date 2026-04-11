@@ -1,85 +1,55 @@
-// src/services/loanService.js
+import API from "../api/api";
 
-// 🔹 Fake database (acts like backend)
-let loans = [
-  {
-    id: 1,
-    fullName: "Rahul Sharma",
-    loanType: "Car Loan",
-    loanAmount: 500000,
-    status: "PENDING",
-    submittedAt: "2026-04-01",
-  },
-  {
-    id: 2,
-    fullName: "Priya Verma",
-    loanType: "Home Loan",
-    loanAmount: 2500000,
-    status: "APPROVED",
-    submittedAt: "2026-04-02",
-  },
-];
-
-// 🔹 Simulate API delay
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-
-
-// ==============================
-// ✅ GET ALL LOANS
-// ==============================
-export const getLoans = async () => {
-  await delay(300);
-  return [...loans]; // return copy
-};
-
-
-// ==============================
-// ✅ GET SINGLE LOAN (DETAIL PAGE)
-// ==============================
-export const getLoanById = async (id) => {
-  await delay(200);
-  return loans.find((loan) => loan.id === Number(id));
-};
-
-
-// ==============================
-// ✅ CREATE NEW LOAN
-// ==============================
-export const createLoan = async (loanData) => {
-  await delay(300);
-
-  const newLoan = {
-    id: Date.now(), // unique id
-    status: "PENDING",
-    submittedAt: new Date().toISOString().split("T")[0],
-    ...loanData,
+export function mapLoanDashboardRow(row) {
+  const status =
+    typeof row.status === "string" ? row.status : row.status?.name ?? row.status;
+  return {
+    caseNumber: row.caseNumber,
+    id: row.caseNumber,
+    fullName: row.customerName ?? "—",
+    loanType: row.vehicle?.trim() ? row.vehicle : "—",
+    loanAmount: row.amount ?? 0,
+    status,
+    submittedAt: row.createdDate ?? "—",
+    mobile: row.mobile,
+    bank: row.bank,
   };
+}
 
-  loans.unshift(newLoan); // add on top
-  return newLoan;
-};
+export async function getLoans() {
+  const { data } = await API.get("/loans/dashboard");
+  const list = Array.isArray(data) ? data : [];
+  return list.map(mapLoanDashboardRow);
+}
 
+export async function getLoanById(caseNumber) {
+  const loans = await getLoans();
+  return loans.find((l) => l.caseNumber === caseNumber);
+}
 
-// ==============================
-// ✅ UPDATE LOAN STATUS
-// ==============================
-export const updateLoanStatus = async (id, status) => {
-  await delay(200);
+export async function createLoan(loanData) {
+  const { data } = await API.post("/loans/create", loanData);
+  return data;
+}
 
-  loans = loans.map((loan) =>
-    loan.id === id ? { ...loan, status } : loan
-  );
+export async function updateLoanStatus(caseNumber, status) {
+  const cn = String(caseNumber ?? "").trim();
+  if (!cn) {
+    throw new Error("Missing case number");
+  }
 
-  return true;
-};
+  const body = { caseNumber: cn };
+  if (status === "APPROVED") {
+    const { data } = await API.put("/loans/approve", body);
+    return typeof data === "string" ? data : "Approved";
+  }
+  if (status === "REJECTED") {
+    const { data } = await API.put("/loans/reject", body);
+    return typeof data === "string" ? data : "Rejected";
+  }
+  throw new Error(`Unsupported status transition: ${status}`);
+}
 
-
-// ==============================
-// ✅ DELETE LOAN (optional future)
-// ==============================
-export const deleteLoan = async (id) => {
-  await delay(200);
-
-  loans = loans.filter((loan) => loan.id !== id);
-  return true;
-};
+export async function deleteLoan() {
+  throw new Error("DELETE_LOAN_NOT_SUPPORTED");
+}

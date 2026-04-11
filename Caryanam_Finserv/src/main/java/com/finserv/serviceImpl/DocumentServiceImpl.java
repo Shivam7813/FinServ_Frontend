@@ -1,6 +1,22 @@
 package com.finserv.serviceImpl;
 
-import com.finserv.dto.DocumentDashboardDTO;
+import java.io.File;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service; // ✅ ADDED
+import org.springframework.transaction.annotation.Transactional; // ✅ ADDED
+import org.springframework.web.multipart.MultipartFile; // ✅ ADDED
+
+import com.finserv.dto.DocumentDashboardDTO; // ✅ ADDED
 import com.finserv.dto.DocumentResponseDTO;
 import com.finserv.entity.Document;
 import com.finserv.entity.LoanApplication;
@@ -12,17 +28,7 @@ import com.finserv.repository.DocumentRepository;
 import com.finserv.repository.LoanApplicationRepository;
 import com.finserv.service.DocumentService;
 
-import io.jsonwebtoken.io.IOException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import io.jsonwebtoken.io.IOException; // ✅ ADDED
 
 @Service
 public class DocumentServiceImpl implements DocumentService {
@@ -33,29 +39,45 @@ public class DocumentServiceImpl implements DocumentService {
     @Autowired
     private LoanApplicationRepository loanRepo;
 
-    // ✅ UPLOAD DOCUMENT
+    // ✅ ================= PREVIEW METHOD ADDED =================
+    @Override
+    public ResponseEntity<Resource> previewDocument(Long id) {
 
+        Document doc = documentRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Document not found with id: " + id));
+
+        try {
+            Resource file = new UrlResource(Paths.get(doc.getFilePath()).toUri());
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(doc.getContentType()))
+                    .body(file);
+
+        } catch (Exception e) {
+            throw new RuntimeException("File not found");
+        }
+    }
+    // ✅ =======================================================
+
+    // ✅ UPLOAD DOCUMENT
     @Transactional
     public DocumentResponseDTO upload(Long loanId, MultipartFile file, DocumentType type) {
 
-        // 1️⃣ Validate Loan
         LoanApplication loan = loanRepo.findById(loanId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Loan not found with id: " + loanId));
 
-        // 2️⃣ Validate Type
         if (type == null) {
             throw new BadRequestException("Document type is required");
         }
 
-        // 3️⃣ Safe file name
         String original = Optional.ofNullable(file.getOriginalFilename())
                 .orElse("file.pdf")
                 .replaceAll("\\s+", "_");
 
         String fileName = System.currentTimeMillis() + "_" + original;
 
-        // 4️⃣ Upload directory
         String uploadDir = System.getProperty("user.dir") + File.separator + "uploads" + File.separator;
 
         File folder = new File(uploadDir);
@@ -63,7 +85,6 @@ public class DocumentServiceImpl implements DocumentService {
             folder.mkdirs();
         }
 
-        // 5️⃣ Destination
         File dest = new File(uploadDir + fileName);
 
         try {
@@ -72,12 +93,10 @@ public class DocumentServiceImpl implements DocumentService {
             throw new RuntimeException("File upload failed: " + e.getMessage());
         }
 
-        // 6️⃣ Check duplicate (update existing)
         Document document = documentRepository
                 .findByLoanApplicationIdAndDocumentType(loanId, type)
                 .orElse(new Document());
 
-        // 7️⃣ Set values
         document.setDocumentType(type);
         document.setFileName(fileName);
         document.setFilePath(dest.getAbsolutePath());
@@ -85,7 +104,6 @@ public class DocumentServiceImpl implements DocumentService {
         document.setUploadDate(LocalDate.now());
         document.setLoanApplication(loan);
 
-        // (Optional but recommended)
         document.setFileSize(file.getSize());
         document.setContentType(file.getContentType());
 
@@ -117,12 +135,10 @@ public class DocumentServiceImpl implements DocumentService {
     @Transactional
     public DocumentResponseDTO updateStatus(Long docId, String status) {
 
-        // 1️⃣ Fetch document
         Document doc = documentRepository.findById(docId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Document not found with id: " + docId));
 
-        // 2️⃣ Convert String → Enum
         DocumentStatus newStatus;
         try {
             newStatus = DocumentStatus.valueOf(status.toUpperCase());
@@ -130,7 +146,6 @@ public class DocumentServiceImpl implements DocumentService {
             throw new BadRequestException("Invalid status: " + status);
         }
 
-        // 3️⃣ Update
         doc.setStatus(newStatus);
 
         return mapToDTO(documentRepository.save(doc));
@@ -149,7 +164,6 @@ public class DocumentServiceImpl implements DocumentService {
 
             dto.setCaseNumber(loan.getCaseNumber());
 
-            // Customer Name
             if (loan.getUser() != null && loan.getUser().getPersonalDetails() != null) {
                 dto.setCustomerName(
                         loan.getUser().getPersonalDetails().getFullName()
@@ -158,7 +172,6 @@ public class DocumentServiceImpl implements DocumentService {
                 dto.setCustomerName("Unknown");
             }
 
-            // Documents
             List<Document> docs = loan.getDocuments();
 
             List<DocumentResponseDTO> docDTOs = docs.stream()
@@ -167,7 +180,6 @@ public class DocumentServiceImpl implements DocumentService {
 
             dto.setDocuments(docDTOs);
 
-            // Counts
             dto.setTotalDocuments((long) docs.size());
 
             dto.setVerifiedCount(

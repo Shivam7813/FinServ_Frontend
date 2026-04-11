@@ -5,7 +5,10 @@ export default function LoanTable({ data = [] }) {
   // ✅ STATUS COLOR MAP
   const statusStyles = {
     UNDER_REVIEW: "bg-yellow-100 text-yellow-600",
+    SUBMITTED_TO_BANK: "bg-yellow-100 text-yellow-600",
+    DOCUMENTS_PENDING: "bg-orange-100 text-orange-600",
     APPROVED: "bg-green-100 text-green-600",
+    DISBURSED: "bg-emerald-100 text-emerald-700",
     REJECTED: "bg-red-100 text-red-600",
     PENDING: "bg-blue-100 text-blue-600",
   };
@@ -37,11 +40,11 @@ export default function LoanTable({ data = [] }) {
             {data.length > 0 ? (
               data.map((item) => (
                 <tr
-                  key={item.id}
+                  key={item.caseNumber || item.id}
                   className="border-b hover:bg-gray-50 transition"
                 >
                   <td className="py-3 text-blue-600 font-medium">
-                    CASE-{item.id}
+                    {item.caseNumber || `CASE-${item.id}`}
                   </td>
 
                   <td>{item.fullName}</td>
@@ -56,7 +59,7 @@ export default function LoanTable({ data = [] }) {
                         statusStyles[item.status] || "bg-gray-100 text-gray-600"
                       }`}
                     >
-                      {item.status.replace("_", " ")}
+                      {String(item.status || "").replaceAll("_", " ")}
                     </span>
                   </td>
 

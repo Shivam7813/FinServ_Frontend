@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
+import { useAuth } from "../../context/AuthContext";
+import { getLoggedInDisplayName } from "../../utils/displayName";
 import StatCard from "../../components/StatCard";
 import LoanTable from "../../components/LoanTable";
 
-// ✅ SERVICE IMPORT (REPLACES MOCK)
-import {
-  getDashboardStats,
-  getChartData,
-} from "../../services/dashboardService";
+import { fetchAdminDashboard } from "../../services/dashboardService";
 
 // ✅ ICONS
 import {
@@ -20,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function AdminDashboard() {
-  const [user, setUser] = useState(null);
+  const { user: authUser } = useAuth();
 
   // ✅ STATE FROM SERVICE
   const [stats, setStats] = useState({
@@ -36,11 +34,7 @@ export default function AdminDashboard() {
 
   const navigate = useNavigate();
 
-  // ✅ LOAD USER
-  useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    setUser(storedUser);
-  }, []);
+  const displayName = getLoggedInDisplayName(authUser);
 
   // ✅ FETCH DASHBOARD DATA
   useEffect(() => {
@@ -48,22 +42,10 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
 
-        const statsData = await getDashboardStats();
-        const chartData = await getChartData();
+        const { stats: statsData, tableRows } = await fetchAdminDashboard();
 
         setStats(statsData);
-
-        // 👉 Using chart data as table fallback (frontend only)
-        const formattedApplications = chartData.map((item, index) => ({
-          id: index + 1,
-          fullName: "Customer " + (index + 1),
-          loanType: "Loan",
-          loanAmount: item.approved * 10000,
-          status: "APPROVED",
-          submittedAt: item.month,
-        }));
-
-        setApplications(formattedApplications);
+        setApplications(tableRows);
       } catch (err) {
         console.error("Dashboard error:", err);
       } finally {
@@ -86,7 +68,7 @@ export default function AdminDashboard() {
     <AdminLayout>
       {/* Greeting */}
       <h2 className="text-xl font-semibold mb-1">
-        {getGreeting()}, {user?.name || "User"}
+        {getGreeting()}, {displayName}
       </h2>
 
       <p className="text-gray-500 mb-6">

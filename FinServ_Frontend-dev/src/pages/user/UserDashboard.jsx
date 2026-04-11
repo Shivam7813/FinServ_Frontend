@@ -3,30 +3,31 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom"; // ✅ ADD
 import AdminLayout from "../../layouts/AdminLayout";
+import { useAuth } from "../../context/AuthContext";
+import { getLoggedInDisplayName } from "../../utils/displayName";
 import StatCard from "../../components/StatCard";
 
-// ✅ SERVICE
-import { getApplications } from "../../services/applicationService";
+// ✅ API-backed list (POST /api/loans/search by your registered full name)
+import {
+  fetchMyLoansFromApi,
+  ensureUserProfile,
+} from "../../services/userLoanApi";
 
 export default function UserDashboard() {
-  const [user, setUser] = useState(null);
+  const { user: authUser } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate(); // ✅ NAVIGATION
 
+  const displayName = getLoggedInDisplayName(authUser);
+
   // ✅ LOAD USER + DATA
   useEffect(() => {
-    try {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      setUser(storedUser);
-    } catch (err) {
-      console.error(err);
-    }
-
     const fetchData = async () => {
       try {
-        const data = await getApplications();
+        await ensureUserProfile();
+        const data = await fetchMyLoansFromApi();
         setApplications(data || []);
       } catch (err) {
         console.error("Error fetching applications:", err);
@@ -48,7 +49,13 @@ export default function UserDashboard() {
 
   // ✅ STATS
   const total = applications.length;
-  const underReview = applications.filter(a => a.status === "UNDER_REVIEW").length;
+  const underReview = applications.filter(
+    (a) =>
+      a.status === "UNDER_REVIEW" ||
+      a.status === "SUBMITTED_TO_BANK" ||
+      a.status === "DOCUMENTS_PENDING" ||
+      a.status === "PENDING"
+  ).length;
   const approved = applications.filter(a => a.status === "APPROVED").length;
   const rejected = applications.filter(a => a.status === "REJECTED").length;
 
@@ -77,12 +84,11 @@ export default function UserDashboard() {
   };
 
   const handleUploadDocs = () => {
-    navigate("/user/upload-documents");
+    navigate("/user/documents");
   };
 
-
-  const handleRowClick = (id) => {
-    navigate(`/user/application/${id}`);
+  const handleRowClick = () => {
+    navigate("/user/applications");
   };
 
   return (
@@ -90,7 +96,9 @@ export default function UserDashboard() {
 
       {/* Greeting */}
       <h2 className="text-xl font-semibold mb-1">
-        {getGreeting()}, {user?.name || "User"} 👋
+        {getGreeting()}, {displayName} 👋
+        {getGreeting()},{" "}
+        {user?.name || user?.email?.split("@")[0] || "User"} 👋
       </h2>
 
       <p className="text-gray-500 mb-6">
@@ -139,7 +147,8 @@ export default function UserDashboard() {
           </div>
         ) : applications.length === 0 ? (
           <div className="text-gray-500 text-center py-6">
-            No applications found
+            No applications found. Submit one from Apply Loan — it must match the
+            full name on your registered profile.
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -157,10 +166,10 @@ export default function UserDashboard() {
               {applications.map((app) => (
                 <tr
                   key={app.id}
-                  onClick={() => handleRowClick(app.id)}
+                  onClick={handleRowClick}
                   className="border-b cursor-pointer hover:bg-gray-50"
                 >
-                  <td className="py-2">LN{app.id}</td>
+                  <td className="py-2">{app.caseNumber || app.id}</td>
                   <td>{app.loanType}</td>
                   <td>₹{app.loanAmount}</td>
                   <td className={getStatusColor(app.status)}>

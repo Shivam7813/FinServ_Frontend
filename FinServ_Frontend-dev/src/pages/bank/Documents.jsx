@@ -1,7 +1,7 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Documents() {
   const [search, setSearch] = useState("");
@@ -9,13 +9,12 @@ export default function Documents() {
   const [documents, setDocuments] = useState([]);
   const [previewDoc, setPreviewDoc] = useState(null);
 
-  const navigate = useNavigate();
-
   const fetchData = async () => {
     try {
       const appRes = await axios.get(
-        "http://localhost:8080/api/loans/dashboard"
+        `${API_BASE_URL}/api/loans/dashboard`
       );
+
       const apps = appRes.data || [];
       setApplications(apps);
 
@@ -23,21 +22,37 @@ export default function Documents() {
 
       for (let app of apps) {
         try {
+
+          // ✅ FIXED: GET CORRECT LOAN ID (IMPORTANT 🔥)
+          const loanId =
+            app.loanId ||
+            app.id ||
+            app.caseId ||
+            app.caseNumber;
+
+          if (!loanId) {
+            console.warn("❌ No valid loanId found:", app);
+            continue;
+          }
+
           const docRes = await axios.post(
-            "http://localhost:8080/api/documents/loan",
-            { id: app.id }
+            `${API_BASE_URL}/api/documents/loan`,
+            { id: loanId },
+            { headers: { "Content-Type": "application/json" } }
           );
+
+          console.log("✅ Docs for loanId:", loanId, docRes.data);
 
           if (Array.isArray(docRes.data)) {
             const docsWithAppId = docRes.data.map((doc) => ({
               ...doc,
-              applicationId: app.id,
+              applicationId: loanId, // ✅ FIXED HERE
             }));
 
             allDocs = [...allDocs, ...docsWithAppId];
           }
         } catch (err) {
-          console.error("Error fetching docs for loan:", app.id);
+          console.error("Error fetching docs for loan:", app);
         }
       }
 
@@ -73,8 +88,23 @@ export default function Documents() {
     status ? status.replaceAll("_", " ") : "N/A";
 
   const getPreviewUrl = (doc) => {
-    if (!doc?.fileName) return null;
-    return `http://localhost:8080/uploads/${doc.fileName}`;
+    if (!doc?.id) return null;
+    return `${API_BASE_URL}/api/documents/preview/${doc.id}`;
+  };
+
+  const handleDownload = (doc) => {
+    if (!doc?.id) return;
+
+    const url = `${API_BASE_URL}/api/documents/preview/${doc.id}`;
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.download = doc.fileName || "document.pdf";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -89,7 +119,7 @@ export default function Documents() {
           <input
             type="text"
             placeholder="Search by applicant..."
-            className="border px-3 py-2 rounded-lg w-full md:w-1/3 focus:ring-2 focus:ring-blue-400 outline-none"
+            className="border px-3 py-2 rounded-lg w-full md:w-1/3"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -118,57 +148,53 @@ export default function Documents() {
               ) : (
                 applications
                   .filter((app) =>
-                    app.fullName?.toLowerCase().includes(search.toLowerCase())
+                    (app.customerName || app.fullName || "")
+                      .toLowerCase()
+                      .includes(search.toLowerCase())
                   )
                   .map((app) => {
+
+                    // ✅ FIXED MATCHING HERE ALSO
+                    const loanId =
+                      app.loanId ||
+                      app.id ||
+                      app.caseId ||
+                      app.caseNumber;
+
                     const appDocs = documents.filter(
-                      (doc) => doc.applicationId === app.id
+                      (doc) => doc.applicationId === loanId
                     );
 
-                    // ✅ NO DOCUMENT CASE
+                    const applicantName =
+                      app.customerName || app.fullName || "Unknown";
+
                     if (appDocs.length === 0) {
                       return (
-                        <tr key={app.id} className="border-t hover:bg-gray-50">
-                          <td className="p-3">{app.fullName || "Unknown"}</td>
+                        <tr key={app.id}>
+                          <td className="p-3">{applicantName}</td>
                           <td className="p-3 text-gray-400">Not Available</td>
                           <td className="p-3 text-gray-400">Not Available</td>
                           <td className="p-3 text-gray-400">N/A</td>
-                          <td className="p-3">
-                            <button
-                              onClick={() =>
-                                navigate(`/bank/review/${app.id}`)
-                              }
-                              className="bg-blue-600 text-white px-3 py-1 rounded"
-                            >
-                              View
-                            </button>
-                          </td>
+                          <td className="p-3 text-gray-400">No Action</td>
                         </tr>
                       );
                     }
 
-                    // ✅ WITH DOCUMENTS
                     return appDocs.map((doc) => (
-                      <tr key={doc.id} className="border-t hover:bg-gray-50">
-                        <td className="p-3">{app.fullName || "Unknown"}</td>
+                      <tr key={doc.id}>
+                        <td className="p-3">{applicantName}</td>
 
                         <td className="p-3">
                           {doc.documentType || "Not Available"}
                         </td>
 
                         <td className="p-3">
-                          {doc.fileName ? (
-                            <span
-                              onClick={() => setPreviewDoc(doc)}
-                              className="text-blue-600 cursor-pointer"
-                            >
-                              📄 {doc.fileName}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">
-                              Not Available
-                            </span>
-                          )}
+                          <span
+                            onClick={() => setPreviewDoc(doc)}
+                            className="text-blue-600 cursor-pointer"
+                          >
+                            📄 {doc.fileName || "View"}
+                          </span>
                         </td>
 
                         <td className="p-3">
@@ -177,14 +203,19 @@ export default function Documents() {
                           </span>
                         </td>
 
-                        <td className="p-3">
+                        <td className="p-3 flex gap-2">
                           <button
-                            onClick={() =>
-                              navigate(`/bank/review/${app.id}`)
-                            }
+                            onClick={() => setPreviewDoc(doc)}
+                            className="bg-green-600 text-white px-3 py-1 rounded"
+                          >
+                            Preview
+                          </button>
+
+                          <button
+                            onClick={() => handleDownload(doc)}
                             className="bg-blue-600 text-white px-3 py-1 rounded"
                           >
-                            View
+                            Download
                           </button>
                         </td>
                       </tr>
@@ -196,12 +227,12 @@ export default function Documents() {
         </div>
 
         {previewDoc && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
-            <div className="bg-white p-4 rounded w-full max-w-3xl">
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+            <div className="bg-white p-4 rounded w-full max-w-4xl">
 
               <iframe
                 src={getPreviewUrl(previewDoc)}
-                className="w-full h-[500px]"
+                className="w-full h-[600px]"
                 title="preview"
               />
 

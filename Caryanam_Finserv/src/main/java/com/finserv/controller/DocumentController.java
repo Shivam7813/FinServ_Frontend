@@ -1,15 +1,11 @@
 package com.finserv.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource; // ✅ ADDED
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import com.finserv.dto.DocumentResponseDTO;
@@ -25,6 +21,18 @@ public class DocumentController {
 
     @Autowired
     private DocumentService documentService;
+
+    // ✅ ================= PREVIEW API ADDED =================
+    @GetMapping("/preview/{id}")
+    public ResponseEntity<Resource> previewDocument(@PathVariable Long id) {
+
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid document ID");
+        }
+
+        return documentService.previewDocument(id);
+    }
+    // ✅ ====================================================
 
     // ✅ UPLOAD (BODY + FILE)
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -129,6 +137,4 @@ public class DocumentController {
     public ResponseEntity<?> getDashboard() {
         return ResponseEntity.ok(documentService.getDashboard());
     }
-
-    
 }

@@ -1,6 +1,7 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useEffect, useState } from "react";
 import axios from "axios"; // ✅ ADDED
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Reports() {
   const [applications, setApplications] = useState([]);
@@ -10,7 +11,7 @@ export default function Reports() {
     const fetchData = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:8080/api/loans/dashboard"
+          `${API_BASE_URL}/api/loans/dashboard`
         );
 
         setApplications(res.data || []);

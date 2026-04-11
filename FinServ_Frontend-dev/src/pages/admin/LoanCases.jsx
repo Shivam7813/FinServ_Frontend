@@ -1,28 +1,41 @@
 import AdminLayout from "../../layouts/AdminLayout";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
-// ✅ SERVICE IMPORT (REPLACES MOCK)
 import {
   getLoans,
   updateLoanStatus,
 } from "../../services/loanService";
 
+const TERMINAL = new Set(["APPROVED", "REJECTED", "DISBURSED"]);
+
+function canApproveOrReject(app) {
+  const cn = String(app.caseNumber ?? "").trim();
+  if (!cn) return false;
+  return !TERMINAL.has(app.status);
+}
+
 export default function LoanCases() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [applications, setApplications] = useState([]);
   const [filteredApps, setFilteredApps] = useState([]);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
   const [loading, setLoading] = useState(true);
+  const [actionKey, setActionKey] = useState(null);
 
   // ✅ STATUS COLORS
   const statusStyles = {
     UNDER_REVIEW: "bg-yellow-100 text-yellow-600",
+    SUBMITTED_TO_BANK: "bg-yellow-100 text-yellow-600",
+    DOCUMENTS_PENDING: "bg-orange-100 text-orange-600",
     APPROVED: "bg-green-100 text-green-600",
+    DISBURSED: "bg-emerald-100 text-emerald-700",
     REJECTED: "bg-red-100 text-red-600",
     PENDING: "bg-blue-100 text-blue-600",
   };
@@ -36,6 +49,8 @@ export default function LoanCases() {
       setFilteredApps(data);
     } catch (err) {
       console.error("Error fetching loans:", err);
+      setApplications([]);
+      setFilteredApps([]);
     } finally {
       setLoading(false);
     }
@@ -45,15 +60,25 @@ export default function LoanCases() {
     fetchLoans();
   }, []);
 
+  useEffect(() => {
+    setSearch(searchParams.get("q") ?? "");
+  }, [searchParams]);
+
+  const setSearchQuery = (value) => {
+    setSearch(value);
+    setSearchParams(value.trim() ? { q: value } : {}, { replace: true });
+  };
+
   // ✅ SEARCH + FILTER LOGIC
   useEffect(() => {
     let data = applications;
 
-    if (search) {
+    if (search.trim()) {
+      const q = search.toLowerCase();
       data = data.filter((app) =>
-        `${app.fullName} ${app.loanType} ${app.id}`
+        `${app.fullName} ${app.loanType} ${app.caseNumber || app.id} ${app.bank || ""} ${app.mobile || ""} ${app.loanAmount ?? ""}`
           .toLowerCase()
-          .includes(search.toLowerCase())
+          .includes(q)
       );
     }
 
@@ -64,10 +89,45 @@ export default function LoanCases() {
     setFilteredApps(data);
   }, [search, statusFilter, applications]);
 
-  // ✅ UPDATE STATUS (UI only for now)
-  const handleStatusChange = async (id, status) => {
-    await updateLoanStatus(id, status);
-    fetchLoans(); // refresh data
+  const handleStatusChange = async (app, status) => {
+    const caseNumber = String(app.caseNumber ?? "").trim();
+    if (!caseNumber) {
+      toast.error("This row has no case number — cannot update.");
+      return;
+    }
+    if (!canApproveOrReject(app)) {
+      toast.error("This loan is already closed (approved, rejected, or disbursed).");
+      return;
+    }
+
+    const ok = window.confirm(
+      `${status === "APPROVED" ? "Approve" : "Reject"} loan ${caseNumber} for ${app.fullName}?`
+    );
+    if (!ok) return;
+
+    const key = `${caseNumber}-${status}`;
+    try {
+      setActionKey(key);
+      const message = await updateLoanStatus(caseNumber, status);
+      toast.success(
+        typeof message === "string"
+          ? message
+          : status === "APPROVED"
+            ? "Loan approved"
+            : "Loan rejected"
+      );
+      await fetchLoans();
+    } catch (e) {
+      console.error(e);
+      const msg =
+        e?.response?.data?.message ||
+        (typeof e?.response?.data === "string" ? e.response.data : null) ||
+        e.message ||
+        "Could not update status";
+      toast.error(msg);
+    } finally {
+      setActionKey(null);
+    }
   };
 
   return (
@@ -86,11 +146,12 @@ export default function LoanCases() {
 
           {/* Search */}
           <input
-            type="text"
-            placeholder="Search by case number, customer..."
+            type="search"
+            placeholder="Search by case number, customer, bank, mobile…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="px-4 py-2 border rounded-lg text-sm w-full max-w-xs focus:ring-2 focus:ring-blue-500"
+            aria-label="Filter loan cases"
           />
 
           {/* Filter */}
@@ -102,8 +163,11 @@ export default function LoanCases() {
             <option value="ALL">All Status</option>
             <option value="PENDING">Pending</option>
             <option value="UNDER_REVIEW">Under Review</option>
+            <option value="SUBMITTED_TO_BANK">Submitted to Bank</option>
+            <option value="DOCUMENTS_PENDING">Documents Pending</option>
             <option value="APPROVED">Approved</option>
             <option value="REJECTED">Rejected</option>
+            <option value="DISBURSED">Disbursed</option>
           </select>
 
           {/* Button */}
@@ -149,11 +213,11 @@ export default function LoanCases() {
                   ) : (
                     filteredApps.map((app) => (
                       <tr
-                        key={app.id}
+                        key={app.caseNumber || app.id}
                         className="border-b hover:bg-gray-50 transition"
                       >
                         <td className="py-3 text-blue-600 font-medium">
-                          CASE-{app.id}
+                          {app.caseNumber || `CASE-${app.id}`}
                         </td>
 
                         <td>{app.fullName}</td>
@@ -167,31 +231,43 @@ export default function LoanCases() {
                               "bg-gray-100 text-gray-600"
                             }`}
                           >
-                            {app.status.replace("_", " ")}
+                            {String(app.status || "").replaceAll("_", " ")}
                           </span>
                         </td>
 
                         <td>{app.submittedAt}</td>
 
-                        {/* Actions */}
-                        <td className="flex gap-2 text-xs">
-                          <button
-                            onClick={() =>
-                              handleStatusChange(app.id, "APPROVED")
-                            }
-                            className="text-green-600"
-                          >
-                            Approve
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              handleStatusChange(app.id, "REJECTED")
-                            }
-                            className="text-red-600"
-                          >
-                            Reject
-                          </button>
+                        <td className="py-3">
+                          {canApproveOrReject(app) ? (
+                            <div className="flex flex-wrap gap-2 text-xs">
+                              <button
+                                type="button"
+                                disabled={
+                                  actionKey === `${app.caseNumber}-APPROVED`
+                                }
+                                onClick={() => handleStatusChange(app, "APPROVED")}
+                                className="px-2 py-1 rounded border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50"
+                              >
+                                {actionKey === `${app.caseNumber}-APPROVED`
+                                  ? "…"
+                                  : "Approve"}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={
+                                  actionKey === `${app.caseNumber}-REJECTED`
+                                }
+                                onClick={() => handleStatusChange(app, "REJECTED")}
+                                className="px-2 py-1 rounded border border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              >
+                                {actionKey === `${app.caseNumber}-REJECTED`
+                                  ? "…"
+                                  : "Reject"}
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-xs">—</span>
+                          )}
                         </td>
                       </tr>
                     ))

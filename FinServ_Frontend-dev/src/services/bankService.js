@@ -1,139 +1,75 @@
-// 🔹 STORAGE KEY
-const STORAGE_KEY = "banks_data";
+import API from "../api/api";
 
-// 🔹 DEFAULT DATA (FIRST TIME ONLY)
-const defaultBanks = [
-  {
-    id: 1,
-    name: "HDFC Bank",
-    roi: "8.5% - 10.5%",
-    processing: "2-3 days",
-    ltv: "90%",
-    tenure: "84 months",
-    features: [
-      "Quick approval",
-      "Minimal documentation",
-      "Doorstep service",
-    ],
-  },
-  {
-    id: 2,
-    name: "ICICI Bank",
-    roi: "8.75% - 11%",
-    processing: "2-4 days",
-    ltv: "85%",
-    tenure: "72 months",
-    features: [
-      "Online tracking",
-      "Flexible EMI",
-      "Part payment allowed",
-    ],
-  },
-  {
-    id: 3,
-    name: "State Bank of India",
-    roi: "8.25% - 9.75%",
-    processing: "3-5 days",
-    ltv: "85%",
-    tenure: "84 months",
-    features: [
-      "Lowest rates",
-      "Government backed",
-      "No prepayment charges",
-    ],
-  },
-];
-
-// 🔹 SAFE LOAD + AUTO UPGRADE OLD DATA
-const loadBanks = () => {
-  const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-
-  if (!stored) return defaultBanks;
-
-  // 🔥 upgrade old data (important)
-  return stored.map((b, index) => ({
-    id: b.id || Date.now() + index,
-    name: b.name || "Unnamed Bank",
-    roi: b.roi || "N/A",
-    processing: b.processing || "N/A",
-    ltv: b.ltv || "N/A",
-    tenure: b.tenure || "N/A",
+function mapBank(b) {
+  return {
+    id: b.id,
+    name: b.bankName,
+    roi: b.roiRange,
+    processing: b.processingDays,
+    ltv: b.maxLtv != null ? `${b.maxLtv}%` : "",
+    tenure: b.maxTenureMonths != null ? `${b.maxTenureMonths} mo` : "",
     features: b.features || [],
-  }));
-};
+    casesThisMonth: b.casesThisMonth ?? 0,
+  };
+}
 
-// 🔹 INITIAL DATA
-let bankExecutives = loadBanks();
+function parseRoi(formRoi) {
+  const s = String(formRoi ?? "").replace(/%/g, "");
+  const m = s.match(/([\d.]+)\s*-\s*([\d.]+)/);
+  if (m) return { min: parseFloat(m[1]), max: parseFloat(m[2]) };
+  const n = parseFloat(s);
+  if (!Number.isNaN(n)) return { min: n, max: n };
+  return { min: 8.5, max: 10.5 };
+}
 
-// 🔹 SAVE TO LOCALSTORAGE
-const saveToStorage = () => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(bankExecutives));
-};
+function parseLtv(ltvStr) {
+  const n = parseInt(String(ltvStr ?? "").replace(/[^0-9]/g, ""), 10);
+  return Number.isFinite(n) ? n : 85;
+}
 
-// simulate delay
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+function parseTenure(tStr) {
+  const n = parseInt(String(tStr ?? "").replace(/[^0-9]/g, ""), 10);
+  return Number.isFinite(n) && n > 0 ? n : 60;
+}
 
+export async function getBanks() {
+  const { data } = await API.get("/banks");
+  return (Array.isArray(data) ? data : []).map(mapBank);
+}
 
-// ==============================
-// ✅ GET ALL BANKS
-// ==============================
-export const getBanks = async () => {
-  await delay(200);
-  return [...bankExecutives];
-};
+export async function addBank(form) {
+  const { min, max } = parseRoi(form.roi);
+  const feats = Array.isArray(form.features)
+    ? form.features.map((f) => String(f).trim()).filter(Boolean)
+    : [];
 
-
-// ==============================
-// ✅ ADD BANK
-// ==============================
-export const addBank = async (bank) => {
-  await delay(200);
-
-  const newBank = {
-    id: Date.now(),
-    name: bank.name,
-    roi: bank.roi || "N/A",
-    processing: bank.processing || "N/A",
-    ltv: bank.ltv || "N/A",
-    tenure: bank.tenure || "N/A",
-    features: bank.features || [],
+  const body = {
+    bankName: String(form.name || "").trim(),
+    roiMin: min,
+    roiMax: max,
+    processingDays: String(form.processing || "3-5 Days").trim(),
+    maxLtv: parseLtv(form.ltv),
+    maxTenureMonths: parseTenure(form.tenure),
   };
 
-  bankExecutives.push(newBank);
-  saveToStorage();
+  if (feats.length > 0) {
+    body.features = feats;
+  }
 
-  return newBank;
-};
+  const { data } = await API.post("/banks/add", body);
+  return mapBank(data);
+}
 
+export async function updateBank(id, form) {
+  const { min, max } = parseRoi(form.roi);
+  const { data } = await API.put("/banks/roi", {
+    id,
+    roiMin: min,
+    roiMax: max,
+  });
+  return mapBank(data);
+}
 
-// ==============================
-// ✅ UPDATE BANK
-// ==============================
-export const updateBank = async (id, updatedData) => {
-  await delay(200);
-
-  bankExecutives = bankExecutives.map((b) =>
-    b.id === id
-      ? {
-          ...b,
-          ...updatedData,
-        }
-      : b
-  );
-
-  saveToStorage();
-  return true;
-};
-
-
-// ==============================
-// ✅ DELETE BANK
-// ==============================
-export const deleteBank = async (id) => {
-  await delay(200);
-
-  bankExecutives = bankExecutives.filter((b) => b.id !== id);
-
-  saveToStorage();
-  return true;
-};
+export async function deleteBank() {
+  throw new Error("Bank delete is not supported by the API.");
+}

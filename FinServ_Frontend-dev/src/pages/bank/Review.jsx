@@ -2,6 +2,7 @@ import AdminLayout from "../../layouts/AdminLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Review() {
   const { caseNumber } = useParams(); 
@@ -13,7 +14,6 @@ export default function Review() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
-  // 🔴 NEW STATE
   const [showRemarkModal, setShowRemarkModal] = useState(false);
   const [remark, setRemark] = useState("");
 
@@ -23,7 +23,7 @@ export default function Review() {
 
     try {
       const res = await axios.post(
-        "http://localhost:8080/api/loans/search",
+        `${API_BASE_URL}/api/loans/search`,
         { caseNumber, name: "" },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -49,7 +49,7 @@ export default function Review() {
       if (mapped.id) {
         try {
           const docRes = await axios.post(
-            "http://localhost:8080/api/documents/loan",
+            `${API_BASE_URL}/api/documents/loan`,
             { id: mapped.id },
             { headers: { "Content-Type": "application/json" } }
           );
@@ -114,6 +114,11 @@ export default function Review() {
     setUpdating(false);
   };
 
+  // ✅ PREVIEW FUNCTION
+  const handlePreview = (docId) => {
+    window.open(`${API_BASE_URL}/api/documents/preview/${docId}`, "_blank");
+  };
+
   const handleSaveRemark = () => {
     console.log("Remark:", remark);
     setShowRemarkModal(false);
@@ -170,11 +175,34 @@ export default function Review() {
             <p>No documents</p>
           ) : (
             documents.map((doc) => (
-              <div key={doc.id} className="flex justify-between p-2 border rounded mb-2">
-                <span>{doc.name || "Document"}</span>
-                <span className={getStatusStyle(doc.status)}>
-                  {formatStatus(doc.status)}
-                </span>
+              <div key={doc.id} className="flex justify-between items-center p-2 border rounded mb-2">
+
+                {/* NAME */}
+                <span>{doc.documentType || "Document"}</span>
+
+                {/* ACTIONS */}
+                <div className="flex items-center gap-3">
+
+                  {/* PREVIEW BUTTON */}
+                  {doc.id ? (
+                    <button
+                      onClick={() => handlePreview(doc.id)}
+                      className="text-blue-600 underline text-sm"
+                    >
+                      View
+                    </button>
+                  ) : (
+                    <span className="text-gray-400 text-sm">
+                      Not Available
+                    </span>
+                  )}
+
+                  {/* STATUS */}
+                  <span className={`${getStatusStyle(doc.status)} px-2 py-1 rounded text-sm`}>
+                    {formatStatus(doc.status)}
+                  </span>
+
+                </div>
               </div>
             ))
           )}
@@ -196,7 +224,6 @@ export default function Review() {
               Under Review
             </button>
 
-            {/* ✅ REMARK BUTTON */}
             <button
               onClick={() => setShowRemarkModal(true)}
               className="bg-gray-800 text-white px-4 py-2 rounded"
@@ -206,17 +233,15 @@ export default function Review() {
           </div>
         </div>
 
-        {/* ✅ FIXED MODAL */}
+        {/* REMARK MODAL */}
         {showRemarkModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
 
-            {/* BACKDROP */}
             <div
               className="absolute inset-0 bg-black opacity-40"
               onClick={() => setShowRemarkModal(false)}
             ></div>
 
-            {/* MODAL */}
             <div className="relative bg-white p-6 rounded-xl shadow w-full max-w-md z-50">
               <h3 className="text-lg font-semibold mb-3">Add Remark</h3>
 

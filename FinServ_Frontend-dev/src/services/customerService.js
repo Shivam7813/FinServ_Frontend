@@ -1,56 +1,28 @@
-// 🔹 Fake users
-let users = [
-  { id: 1, fullName: "Rahul Sharma", email: "rahul@gmail.com" },
-  { id: 2, fullName: "Priya Verma", email: "priya@gmail.com" },
-];
+import API from "../api/api";
 
-// 🔹 Fake loans
-let applications = [
-  { id: 1, fullName: "Rahul Sharma", loanAmount: 500000, status: "APPROVED" },
-  { id: 2, fullName: "Rahul Sharma", loanAmount: 200000, status: "PENDING" },
-  { id: 3, fullName: "Priya Verma", loanAmount: 1500000, status: "UNDER_REVIEW" },
-];
+export async function getCustomerDashboardUsers() {
+  const { data } = await API.get("/users/dashboard");
+  const list = Array.isArray(data) ? data : [];
+  return list.map((row) => ({
+    id: row.userId,
+    fullName: row.fullName ?? "—",
+    email: row.email ?? "—",
+    mobileNumber: row.mobileNumber ?? "",
+    panNumber: row.panNumber ?? "",
+    totalLoans: Number(row.totalLoans) || 0,
+    activeLoans: Number(row.activeLoans) || 0,
+    totalLoanAmount: Number(row.totalLoanAmount) || 0,
+  }));
+}
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+export async function updateUser(id, { fullName, email }) {
+  await API.put("/users/basic", {
+    id,
+    fullName,
+    email,
+  });
+}
 
-// ✅ GET USERS
-export const getUsers = async () => {
-  await delay(200);
-  return [...users];
-};
-
-// ✅ GET APPLICATIONS
-export const getApplications = async () => {
-  await delay(200);
-  return [...applications];
-};
-
-// ✅ ADD USER
-export const addUser = async (user) => {
-  await delay(200);
-
-  const newUser = { id: Date.now(), ...user };
-  users.push(newUser);
-
-  return newUser;
-};
-
-// ✅ UPDATE USER
-export const updateUser = async (id, updatedData) => {
-  await delay(200);
-
-  users = users.map((u) =>
-    u.id === id ? { ...u, ...updatedData } : u
-  );
-
-  return true;
-};
-
-// ✅ DELETE USER
-export const deleteUser = async (id) => {
-  await delay(200);
-
-  users = users.filter((u) => u.id !== id);
-
-  return true;
-};
+export async function deleteUser(id) {
+  await API.delete("/users/delete", { data: { id } });
+}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 import {
   FaEnvelope,
   FaLock,
@@ -103,7 +104,7 @@ const Register = () => {
             : null,
       };
 
-      await axios.post("http://localhost:8080/api/users", payload);
+      await axios.post(`${API_BASE_URL}/api/users`, payload);
 
       toast.success("Registration Successful ✅");
       setTimeout(() => navigate("/"), 1000);

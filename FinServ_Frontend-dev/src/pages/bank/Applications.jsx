@@ -1,13 +1,19 @@
 import AdminLayout from "../../layouts/AdminLayout";
-import { useNavigate, useLocation } from "react-router-dom";
+import {
+  useNavigate,
+  useLocation,
+  useSearchParams,
+} from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Applications() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [applications, setApplications] = useState([]);
 
   // 🔥 Detect page type
@@ -18,7 +24,7 @@ export default function Applications() {
     const fetchData = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:8080/api/loans/dashboard"
+          `${API_BASE_URL}/api/loans/dashboard`
         );
 
         console.log("Applications API:", response.data);
@@ -32,13 +38,28 @@ export default function Applications() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    setSearch(searchParams.get("q") ?? "");
+  }, [searchParams]);
+
+  const setSearchQuery = (value) => {
+    setSearch(value);
+    setSearchParams(value.trim() ? { q: value } : {}, { replace: true });
+  };
+
   // 🔥 FILTER
   const filteredApps = applications.filter((app) => {
     const name = app.customerName || "";
+    const caseNumber = app.caseNumber || "";
+    const mobile = app.mobile || "";
+    const vehicle = app.vehicle || "";
+    const bank = app.bank || "";
+    const amount = String(app.loanAmount ?? "");
 
-    const matchesSearch = name
-      .toLowerCase()
-      .includes(search.toLowerCase());
+    const haystack =
+      `${name} ${caseNumber} ${mobile} ${vehicle} ${bank} ${amount}`.toLowerCase();
+    const matchesSearch =
+      !search.trim() || haystack.includes(search.toLowerCase());
 
     if (isUnderReviewPage) {
       return (
@@ -87,11 +108,12 @@ export default function Applications() {
         {/* SEARCH */}
         <div className="mb-5">
           <input
-            type="text"
-            placeholder="Search applicant..."
+            type="search"
+            placeholder="Search by name, case number, mobile, vehicle, bank…"
             className="border px-3 py-2 rounded-lg w-full md:w-1/3"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Filter applications"
           />
         </div>
 

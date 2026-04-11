@@ -1,7 +1,6 @@
-// src/services/settingsService.js
+const STORAGE_KEY = "finserv_admin_settings";
 
-// 🔹 Fake settings data
-let settings = {
+const defaults = {
   notifications: {
     email: true,
     sms: false,
@@ -13,18 +12,48 @@ let settings = {
   },
 };
 
-// simulate delay
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return {
+        notifications: { ...defaults.notifications },
+        security: { ...defaults.security },
+      };
+    }
+    const parsed = JSON.parse(raw);
+    return {
+      notifications: { ...defaults.notifications, ...parsed.notifications },
+      security: { ...defaults.security, ...parsed.security },
+    };
+  } catch {
+    return {
+      notifications: { ...defaults.notifications },
+      security: { ...defaults.security },
+    };
+  }
+}
 
-// ✅ GET SETTINGS
-export const getSettings = async () => {
-  await delay(200);
-  return { ...settings };
-};
+function save(settings) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
 
-// ✅ UPDATE SETTINGS (future use)
-export const updateSettings = async (newSettings) => {
-  await delay(200);
-  settings = { ...settings, ...newSettings };
-  return true;
-};
+export async function getSettings() {
+  return load();
+}
+
+export async function updateSettings(partial) {
+  const current = load();
+  const next = {
+    notifications: {
+      ...current.notifications,
+      ...(partial.notifications || {}),
+    },
+    security: {
+      ...current.security,
+      ...(partial.security || {}),
+    },
+  };
+  save(next);
+  return next;
+}
