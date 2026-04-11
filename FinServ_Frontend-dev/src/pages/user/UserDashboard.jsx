@@ -3,27 +3,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom"; // ✅ ADD
 import AdminLayout from "../../layouts/AdminLayout";
+import { useAuth } from "../../context/AuthContext";
+import { getLoggedInDisplayName } from "../../utils/displayName";
 import StatCard from "../../components/StatCard";
 
 // ✅ SERVICE
 import { getApplications } from "../../services/applicationService";
 
 export default function UserDashboard() {
-  const [user, setUser] = useState(null);
+  const { user: authUser } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate(); // ✅ NAVIGATION
 
+  const displayName = getLoggedInDisplayName(authUser);
+
   // ✅ LOAD USER + DATA
   useEffect(() => {
-    try {
-      const storedUser = JSON.parse(localStorage.getItem("user"));
-      setUser(storedUser);
-    } catch (err) {
-      console.error(err);
-    }
-
     const fetchData = async () => {
       try {
         const data = await getApplications();
@@ -90,7 +87,7 @@ export default function UserDashboard() {
 
       {/* Greeting */}
       <h2 className="text-xl font-semibold mb-1">
-        {getGreeting()}, {user?.name || "User"} 👋
+        {getGreeting()}, {displayName} 👋
       </h2>
 
       <p className="text-gray-500 mb-6">

@@ -2,6 +2,7 @@ import AdminLayout from "../../layouts/AdminLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Review() {
   const { caseNumber } = useParams(); 
@@ -19,7 +20,7 @@ export default function Review() {
 
     try {
       const res = await axios.post(
-        "http://localhost:8080/api/loans/search",
+        `${API_BASE_URL}/api/loans/search`,
         { caseNumber, name: "" },
         {
           headers: { "Content-Type": "application/json" },
@@ -47,7 +48,7 @@ export default function Review() {
       if (mapped.id) {
         try {
           const docRes = await axios.post(
-            "http://localhost:8080/api/documents/loan",
+            `${API_BASE_URL}/api/documents/loan`,
             { id: mapped.id },
             {
               headers: { "Content-Type": "application/json" },
@@ -116,7 +117,7 @@ export default function Review() {
       console.log("Updating:", caseNumber, newStatus, "Current:", status);
 
       const res = await axios.put(
-        `http://localhost:8080${url}`,
+        `${API_BASE_URL}${url}`,
         { caseNumber },
         {
           headers: { "Content-Type": "application/json" }

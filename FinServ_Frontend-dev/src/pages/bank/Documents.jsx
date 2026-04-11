@@ -2,6 +2,7 @@ import AdminLayout from "../../layouts/AdminLayout";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Documents() {
   const [search, setSearch] = useState("");
@@ -14,7 +15,7 @@ export default function Documents() {
   const fetchData = async () => {
     try {
       const appRes = await axios.get(
-        "http://localhost:8080/api/loans/dashboard"
+        `${API_BASE_URL}/api/loans/dashboard`
       );
       const apps = appRes.data || [];
       setApplications(apps);
@@ -24,7 +25,7 @@ export default function Documents() {
       for (let app of apps) {
         try {
           const docRes = await axios.post(
-            "http://localhost:8080/api/documents/loan",
+            `${API_BASE_URL}/api/documents/loan`,
             { id: app.id }
           );
 
@@ -87,7 +88,7 @@ export default function Documents() {
 
   const handleVerify = async (id) => {
     try {
-      await axios.put("http://localhost:8080/api/documents/status", {
+      await axios.put(`${API_BASE_URL}/api/documents/status`, {
         docId: id,
         status: "APPROVED",
       });
@@ -99,7 +100,7 @@ export default function Documents() {
 
   const getPreviewUrl = (doc) => {
     if (!doc?.fileName) return null;
-    return `http://localhost:8080/uploads/${doc.fileName}`;
+    return `${API_BASE_URL}/uploads/${doc.fileName}`;
   };
 
   return (

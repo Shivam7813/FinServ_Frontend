@@ -25,37 +25,60 @@ import { getReportsData } from "../../services/reportService";
 const COLORS = ["#14b8a6", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 export default function Reports() {
-
+  const [year, setYear] = useState(new Date().getFullYear());
   const [approvalData, setApprovalData] = useState([]);
   const [disbursementData, setDisbursementData] = useState([]);
   const [bankData, setBankData] = useState([]);
   const [tatData, setTatData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ FETCH DATA
   useEffect(() => {
     const fetchData = async () => {
-      const data = await getReportsData();
-
-      setApprovalData(data.approvalData);
-      setDisbursementData(data.disbursementData);
-      setBankData(data.bankData);
-      setTatData(data.tatData);
+      try {
+        setLoading(true);
+        const data = await getReportsData(year);
+        setApprovalData(data.approvalData);
+        setDisbursementData(data.disbursementData);
+        setBankData(data.bankData);
+        setTatData(data.tatData);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
-  }, []);
+  }, [year]);
 
   return (
     <AdminLayout>
       <div className="p-6 space-y-6">
 
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold">MIS Reports</h1>
-          <p className="text-gray-500">
-            Performance analytics and insights
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">MIS Reports</h1>
+            <p className="text-gray-500">
+              Performance analytics and insights (API data)
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            Year
+            <input
+              type="number"
+              min={2020}
+              max={2035}
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              className="border rounded-lg px-3 py-1.5 w-28"
+            />
+          </label>
         </div>
+
+        {loading ? (
+          <p className="text-gray-500 text-sm">Loading report data…</p>
+        ) : null}
 
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

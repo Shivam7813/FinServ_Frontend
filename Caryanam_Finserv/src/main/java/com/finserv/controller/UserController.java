@@ -198,6 +198,20 @@ public class UserController {
         );
     }
 
+    @PutMapping("/users/basic")
+    public ResponseEntity<UserResponseDTO> updateUserBasic(
+            @RequestBody UserBasicUpdateDTO body) {
+
+        if (body == null) {
+            throw new BadRequestException("Request body is missing");
+        }
+        if (body.getId() == null || body.getId() <= 0) {
+            throw new BadRequestException("Invalid user ID");
+        }
+
+        return ResponseEntity.ok(userService.updateUserBasic(body));
+    }
+
     // DASHBOARD
     @GetMapping("/users/dashboard")
     public ResponseEntity<List<CustomerDashboardDTO>> getDashboard() {

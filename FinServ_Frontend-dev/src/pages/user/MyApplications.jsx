@@ -1,13 +1,25 @@
 // src/pages/user/MyApplications.jsx
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
 
 // ✅ SERVICE
 import { getUserApplications } from "../../services/userService";
 
 export default function MyApplications() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [applications, setApplications] = useState([]);
+
+  useEffect(() => {
+    setSearch(searchParams.get("q") ?? "");
+  }, [searchParams]);
+
+  const setSearchQuery = (value) => {
+    setSearch(value);
+    setSearchParams(value.trim() ? { q: value } : {}, { replace: true });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -16,7 +28,8 @@ export default function MyApplications() {
 
         if (!user) return;
 
-        const data = await getUserApplications(user.name);
+        const lookupName = user.name || user.email;
+        const data = await getUserApplications(lookupName);
 
         // 🔥 FORMAT DATA TO MATCH UI
         const formatted = data.map((app) => ({
@@ -57,6 +70,14 @@ export default function MyApplications() {
     return "text-gray-500";
   };
 
+  const filtered = applications.filter((app) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return `${app.id} ${app.carModel} ${app.amount} ${app.status} ${app.bank}`
+      .toLowerCase()
+      .includes(q);
+  });
+
   return (
     <AdminLayout>
 
@@ -64,11 +85,24 @@ export default function MyApplications() {
         My Loan Applications
       </h2>
 
+      <input
+        type="search"
+        placeholder="Search my applications…"
+        className="border px-3 py-2 rounded-lg w-full max-w-md mb-4"
+        value={search}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        aria-label="Filter my applications"
+      />
+
       <div className="bg-white p-4 rounded-lg shadow">
 
         {applications.length === 0 ? (
           <div className="text-center text-gray-500 py-6">
             No applications found
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center text-gray-500 py-6">
+            No applications match your search
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -83,7 +117,7 @@ export default function MyApplications() {
             </thead>
 
             <tbody>
-              {applications.map((app, index) => (
+              {filtered.map((app, index) => (
                 <tr key={index} className="border-b">
                   <td className="py-2">{app.id}</td>
                   <td>{app.carModel}</td>
