@@ -9,6 +9,8 @@ import {
   Settings,
   CreditCard,
   ClipboardCheck,
+  XCircle,
+  CheckCircle, // 🟢 NEW
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
@@ -18,7 +20,6 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // ✅ Get role safely + normalize
   useEffect(() => {
     if (user?.role) {
       setRole(user.role.toLowerCase());
@@ -35,7 +36,6 @@ export default function Sidebar() {
     }
   }, [user]);
 
-  // 🔥 Role-Based Menu
   const menuConfig = {
     admin: [
       { icon: <LayoutDashboard size={20} />, text: "Dashboard", to: "/admin/dashboard" },
@@ -47,13 +47,18 @@ export default function Sidebar() {
       { icon: <Settings size={20} />, text: "Settings", to: "/admin/settings" },
     ],
 
-    // 🔥 FIXED: use backend role name
+    // 🔥 UPDATED BANK MENU
     bank_evaluate: [
       { icon: <LayoutDashboard size={20} />, text: "Dashboard", to: "/bank/dashboard" },
       { icon: <FileText size={20} />, text: "Loan Applications", to: "/bank/applications" },
-      { icon: <ClipboardCheck size={20} />, text: "Under Review", to: "/bank/under-review" },
+
+      // 🟢 APPROVED (ABOVE REJECTED)
+      { icon: <CheckCircle size={20} />, text: "Approved Applications", to: "/bank/approved" },
+
+      // 🔴 REJECTED
+      { icon: <XCircle size={20} />, text: "Rejected Applications", to: "/bank/rejected" },
+
       { icon: <Folder size={20} />, text: "Documents", to: "/bank/documents" },
-      { icon: <CreditCard size={20} />, text: "Loan Offers", to: "/bank/offers" },
       { icon: <BarChart size={20} />, text: "Reports", to: "/bank/reports" },
     ],
 
@@ -68,10 +73,8 @@ export default function Sidebar() {
     ],
   };
 
-  // ✅ fallback safe
   const menus = menuConfig[role] || [];
 
-  // ✅ Logout
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -95,7 +98,9 @@ export default function Sidebar() {
             <MenuItem key={index} {...item} />
           ))
         ) : (
-          <p className="text-gray-400 text-sm px-3">No menu available</p>
+          <p className="text-gray-400 text-sm px-3">
+            No menu available
+          </p>
         )}
       </div>
 
@@ -112,7 +117,6 @@ export default function Sidebar() {
   );
 }
 
-// 🔥 Menu Item Component
 function MenuItem({ icon, text, to }) {
   return (
     <NavLink

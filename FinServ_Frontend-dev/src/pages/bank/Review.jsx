@@ -13,6 +13,10 @@ export default function Review() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
+  // 🔴 NEW STATE
+  const [showRemarkModal, setShowRemarkModal] = useState(false);
+  const [remark, setRemark] = useState("");
+
   // ✅ FETCH DATA
   const fetchData = async () => {
     setLoading(true);
@@ -21,9 +25,7 @@ export default function Review() {
       const res = await axios.post(
         "http://localhost:8080/api/loans/search",
         { caseNumber, name: "" },
-        {
-          headers: { "Content-Type": "application/json" },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
       if (!res.data || res.data.length === 0) {
@@ -49,14 +51,10 @@ export default function Review() {
           const docRes = await axios.post(
             "http://localhost:8080/api/documents/loan",
             { id: mapped.id },
-            {
-              headers: { "Content-Type": "application/json" },
-            }
+            { headers: { "Content-Type": "application/json" } }
           );
           docs = docRes.data || [];
-        } catch {
-          console.warn("No documents found");
-        }
+        } catch {}
       }
 
       setApplication(mapped);
@@ -64,7 +62,7 @@ export default function Review() {
       setStatus(mapped.status);
 
     } catch (err) {
-      console.error("Fetch error:", err.response || err);
+      console.error("Fetch error:", err);
       setApplication(null);
     }
 
@@ -77,78 +75,66 @@ export default function Review() {
 
   const getStatusStyle = (status) => {
     switch (status) {
-      case "APPROVED":
-        return "bg-green-100 text-green-700";
-      case "REJECTED":
-        return "bg-red-100 text-red-700";
-      case "UNDER_REVIEW":
-        return "bg-blue-100 text-blue-700";
-      case "DOCUMENTS_REQUIRED":
-        return "bg-orange-100 text-orange-700";
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-700";
-      default:
-        return "bg-gray-100 text-gray-700";
+      case "APPROVED": return "bg-green-100 text-green-700";
+      case "REJECTED": return "bg-red-100 text-red-700";
+      case "UNDER_REVIEW": return "bg-blue-100 text-blue-700";
+      case "DOCUMENTS_REQUIRED": return "bg-orange-100 text-orange-700";
+      case "PENDING": return "bg-yellow-100 text-yellow-700";
+      default: return "bg-gray-100 text-gray-700";
     }
   };
 
   const formatStatus = (status) => {
-      if (status === "SUBMITTED_TO_BANK") {
-        return "UNDER REVIEW";
-      }
-      return status?.replaceAll("_", " ");
-    };
+    if (status === "SUBMITTED_TO_BANK") return "UNDER REVIEW";
+    return status?.replaceAll("_", " ");
+  };
 
-  // ✅ UPDATED: backend-controlled logic
-    const handleUpdate = async (newStatus) => {
+  const handleUpdate = async (newStatus) => {
     setUpdating(true);
 
     try {
-
-
       let url = "";
 
-      // ✅ 🔥 THIS WAS MISSING
       if (newStatus === "APPROVED") url = "/api/loans/approve";
       else if (newStatus === "REJECTED") url = "/api/loans/reject";
       else if (newStatus === "UNDER_REVIEW") url = "/api/loans/submit-to-bank";
 
-      console.log("Updating:", caseNumber, newStatus, "Current:", status);
-
-      const res = await axios.put(
+      await axios.put(
         `http://localhost:8080${url}`,
         { caseNumber },
-        {
-          headers: { "Content-Type": "application/json" }
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
       await fetchData();
 
-    } catch (err) {
+    } catch {
       alert("Action failed");
     }
 
     setUpdating(false);
-    };
+  };
 
-  // ✅ LOADING UI
+  const handleSaveRemark = () => {
+    console.log("Remark:", remark);
+    setShowRemarkModal(false);
+    setRemark("");
+  };
+
   if (loading) {
     return (
       <AdminLayout>
-        <div className="p-10 text-center text-gray-500 text-lg">
-          ⏳ Loading application...
+        <div className="p-10 text-center text-gray-500">
+          Loading application...
         </div>
       </AdminLayout>
     );
   }
 
-  // ✅ EMPTY STATE
   if (!application) {
     return (
       <AdminLayout>
-        <div className="p-10 text-center text-red-500 text-lg">
-          ❌ No data found for this case
+        <div className="p-10 text-center text-red-500">
+          No data found
         </div>
       </AdminLayout>
     );
@@ -158,7 +144,6 @@ export default function Review() {
     <AdminLayout>
       <div className="p-4 space-y-6">
 
-        {/* BACK */}
         <button
           onClick={() => navigate(-1)}
           className="text-blue-600 hover:underline text-sm"
@@ -167,103 +152,98 @@ export default function Review() {
         </button>
 
         {/* HEADER */}
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow">
-          <h2 className="text-2xl font-semibold">
+        <div className="bg-blue-600 text-white p-6 rounded-xl">
+          <h2 className="text-xl font-semibold">
             {application.customerName}
           </h2>
-
-          <p className="opacity-90 mt-1">
-            {application.loanType} • ₹{application.loanAmount}
-          </p>
-
-          <span
-            className={`inline-block mt-3 px-3 py-1 text-sm rounded-full ${getStatusStyle(
-              status
-            )}`}
-          >
+          <p>{application.loanType} • ₹{application.loanAmount}</p>
+          <span className={`mt-2 inline-block px-3 py-1 rounded ${getStatusStyle(status)}`}>
             {formatStatus(status)}
           </span>
         </div>
 
-        {/* DETAILS */}
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-xl shadow">
-            <h3 className="font-semibold mb-2">Loan Details</h3>
-            <p><b>Amount:</b> ₹{application.loanAmount}</p>
-            <p><b>Type:</b> {application.loanType}</p>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl shadow">
-            <h3 className="font-semibold mb-2">Current Status</h3>
-            <p className="font-semibold text-blue-600">
-              {formatStatus(status)}
-            </p>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl shadow">
-            <h3 className="font-semibold mb-2">Submitted</h3>
-            <p>{application.submittedAt}</p>
-          </div>
-        </div>
-
         {/* DOCUMENTS */}
         <div className="bg-white p-4 rounded-xl shadow">
-          <h3 className="font-semibold mb-3">Documents</h3>
+          <h3 className="font-semibold mb-2">Documents</h3>
 
           {documents.length === 0 ? (
-            <p className="text-gray-500">No documents available</p>
+            <p>No documents</p>
           ) : (
-            <div className="space-y-2">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex justify-between items-center border p-3 rounded hover:bg-gray-50"
-                >
-                  <span>{doc.name || "Document"}</span>
-
-                  <span
-                    className={`px-2 py-1 text-xs rounded ${getStatusStyle(
-                      doc.status
-                    )}`}
-                  >
-                    {formatStatus(doc.status)}
-                  </span>
-                </div>
-              ))}
-            </div>
+            documents.map((doc) => (
+              <div key={doc.id} className="flex justify-between p-2 border rounded mb-2">
+                <span>{doc.name || "Document"}</span>
+                <span className={getStatusStyle(doc.status)}>
+                  {formatStatus(doc.status)}
+                </span>
+              </div>
+            ))
           )}
         </div>
 
         {/* ACTIONS */}
         <div className="bg-white p-4 rounded-xl shadow">
-          <h3 className="font-semibold mb-3">Decision</h3>
+          <div className="flex gap-3 flex-wrap">
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              disabled={updating || status === "APPROVED"}
-              onClick={() => handleUpdate("APPROVED")}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
-            >
-              {updating ? "Processing..." : "Approve"}
+            <button onClick={() => handleUpdate("APPROVED")} className="bg-green-600 text-white px-4 py-2 rounded">
+              Approve
             </button>
 
-            <button
-              disabled={updating || status === "REJECTED"}
-              onClick={() => handleUpdate("REJECTED")}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50"
-            >
+            <button onClick={() => handleUpdate("REJECTED")} className="bg-red-600 text-white px-4 py-2 rounded">
               Reject
             </button>
 
-            <button
-              disabled={updating || status === "UNDER_REVIEW"}
-              onClick={() => handleUpdate("UNDER_REVIEW")}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
+            <button onClick={() => handleUpdate("UNDER_REVIEW")} className="bg-blue-600 text-white px-4 py-2 rounded">
               Under Review
+            </button>
+
+            {/* ✅ REMARK BUTTON */}
+            <button
+              onClick={() => setShowRemarkModal(true)}
+              className="bg-gray-800 text-white px-4 py-2 rounded"
+            >
+              Remark
             </button>
           </div>
         </div>
+
+        {/* ✅ FIXED MODAL */}
+        {showRemarkModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+
+            {/* BACKDROP */}
+            <div
+              className="absolute inset-0 bg-black opacity-40"
+              onClick={() => setShowRemarkModal(false)}
+            ></div>
+
+            {/* MODAL */}
+            <div className="relative bg-white p-6 rounded-xl shadow w-full max-w-md z-50">
+              <h3 className="text-lg font-semibold mb-3">Add Remark</h3>
+
+              <textarea
+                value={remark}
+                onChange={(e) => setRemark(e.target.value)}
+                className="w-full border rounded p-2 h-28"
+              />
+
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  onClick={() => setShowRemarkModal(false)}
+                  className="bg-gray-300 px-4 py-2 rounded"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleSaveRemark}
+                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </AdminLayout>

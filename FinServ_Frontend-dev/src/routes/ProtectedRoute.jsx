@@ -4,11 +4,11 @@ import { useAuth } from "../context/AuthContext";
 export default function ProtectedRoute({ children, role }) {
   const { user } = useAuth();
 
-  // ⏳ Show loader while checking auth
+  // ⏳ Loading state
   if (user === null) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-gray-500 text-lg">Checking authentication...</p>
       </div>
     );
   }
@@ -21,16 +21,20 @@ export default function ProtectedRoute({ children, role }) {
   // ✅ Normalize roles
   const userRole = user.role?.toLowerCase();
 
-  // 🔥 FIX: map frontend role → backend role
   let requiredRole = role?.toLowerCase();
 
-  if (requiredRole === "bank") {
-    requiredRole = "bank_evaluate";
-  }
+  // 🔥 Role Mapping (Frontend → Backend)
+  const roleMap = {
+    bank: "bank_evaluate",
+    admin: "admin",
+    user: "user",
+  };
+
+  requiredRole = roleMap[requiredRole] || requiredRole;
 
   // ❌ Role mismatch
   if (requiredRole && userRole !== requiredRole) {
-    console.log("Blocked:", userRole, "!=", requiredRole);
+    console.warn("Access Denied:", userRole, "!=", requiredRole);
     return <Navigate to="/" replace />;
   }
 
