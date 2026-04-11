@@ -1,52 +1,27 @@
-// src/services/documentService.js
+import API from "../api/api";
 
-// 🔹 Fake applications
-let applications = [
-  {
-    id: 1,
-    fullName: "Rahul Sharma",
-    submittedAt: "2026-04-01",
-  },
-  {
-    id: 2,
-    fullName: "Priya Verma",
-    submittedAt: "2026-04-02",
-  },
-];
+function mapDocStatus(status) {
+  const s = typeof status === "string" ? status : status?.name ?? String(status);
+  return s || "PENDING";
+}
 
-// 🔹 Fake documents
-let documents = [
-  {
-    id: 1,
-    applicationId: 1,
-    name: "PAN Card",
-    status: "VERIFIED",
-  },
-  {
-    id: 2,
-    applicationId: 1,
-    name: "Aadhaar Card",
-    status: "PENDING",
-  },
-  {
-    id: 3,
-    applicationId: 2,
-    name: "Bank Statement",
-    status: "REJECTED",
-  },
-];
+export async function fetchAdminDocumentDashboard() {
+  const { data } = await API.get("/documents/dashboard");
+  const rows = Array.isArray(data) ? data : [];
 
-// simulate delay
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-
-// ✅ GET APPLICATIONS
-export const getApplications = async () => {
-  await delay(300);
-  return [...applications];
-};
-
-// ✅ GET DOCUMENTS
-export const getDocuments = async () => {
-  await delay(300);
-  return [...documents];
-};
+  return rows.map((entry) => ({
+    caseNumber: entry.caseNumber,
+    customerName: entry.customerName ?? "—",
+    totalDocuments: Number(entry.totalDocuments) || 0,
+    verifiedCount: Number(entry.verifiedCount) || 0,
+    pendingCount: Number(entry.pendingCount) || 0,
+    rejectedCount: Number(entry.rejectedCount) || 0,
+    documents: (entry.documents || []).map((d, idx) => ({
+      id: d.id ?? idx,
+      name: d.documentType?.name ?? d.documentType ?? "Document",
+      fileName: d.fileName,
+      status: mapDocStatus(d.status),
+      uploadDate: d.uploadDate,
+    })),
+  }));
+}

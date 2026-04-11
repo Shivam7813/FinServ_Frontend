@@ -2,6 +2,7 @@ import AdminLayout from "../../layouts/AdminLayout";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function BankReview() {
   const { id } = useParams();
@@ -14,7 +15,7 @@ export default function BankReview() {
     try {
       // 🔹 GET ALL LOANS
       const loanRes = await axios.get(
-        "http://localhost:8080/api/loans/dashboard"
+        `${API_BASE_URL}/api/loans/dashboard`
       );
 
       const selectedLoan = loanRes.data.find(
@@ -25,7 +26,7 @@ export default function BankReview() {
 
       // 🔹 GET DOCUMENTS
       const docRes = await axios.post(
-        "http://localhost:8080/api/documents/loan",
+        `${API_BASE_URL}/api/documents/loan`,
         { id: Number(id) }
       );
 
@@ -43,7 +44,7 @@ export default function BankReview() {
   // 🔥 PREVIEW URL
   const getPreviewUrl = (doc) => {
     if (!doc?.fileName) return null;
-    return `http://localhost:8080/uploads/${doc.fileName}`;
+    return `${API_BASE_URL}/uploads/${doc.fileName}`;
   };
 
   return (

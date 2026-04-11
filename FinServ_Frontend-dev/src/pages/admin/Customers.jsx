@@ -2,18 +2,17 @@ import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 
 import {
-  getUsers,
-  getApplications,
+  getCustomerDashboardUsers,
   updateUser,
   deleteUser,
 } from "../../services/customerService";
 
 export default function Customers() {
   const [users, setUsers] = useState([]);
-  const [applications, setApplications] = useState([]);
 
   const [search, setSearch] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [openMenuId, setOpenMenuId] = useState(null);
 
@@ -26,14 +25,17 @@ export default function Customers() {
     email: "",
   });
 
-  // ✅ FETCH
   const fetchData = async () => {
-    const userData = await getUsers();
-    const appData = await getApplications();
-
-    setUsers(userData);
-    setFilteredUsers(userData);
-    setApplications(appData);
+    try {
+      setLoading(true);
+      const userData = await getCustomerDashboardUsers();
+      setUsers(userData);
+      setFilteredUsers(userData);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -62,11 +64,15 @@ export default function Customers() {
     setOpenMenuId(null);
   };
 
-  // ✅ UPDATE USER
   const handleUpdate = async () => {
-    await updateUser(selectedUser.id, editData);
-    setShowEditModal(false);
-    fetchData();
+    try {
+      await updateUser(selectedUser.id, editData);
+      setShowEditModal(false);
+      fetchData();
+    } catch (e) {
+      console.error(e);
+      alert(e?.response?.data?.message || "Update failed");
+    }
   };
 
   // ✅ OPEN DELETE MODAL
@@ -76,31 +82,15 @@ export default function Customers() {
     setOpenMenuId(null);
   };
 
-  // ✅ CONFIRM DELETE
   const confirmDelete = async () => {
-    await deleteUser(selectedUser.id);
-    setShowDeleteModal(false);
-    fetchData();
-  };
-
-  // ✅ STATS
-  const getCustomerStats = (name) => {
-    const userApps = applications.filter(
-      (app) => app.fullName === name
-    );
-
-    return {
-      totalLoans: userApps.length,
-      activeLoans: userApps.filter(
-        (app) =>
-          app.status === "APPROVED" ||
-          app.status === "UNDER_REVIEW"
-      ).length,
-      totalValue: userApps.reduce(
-        (sum, app) => sum + app.loanAmount,
-        0
-      ),
-    };
+    try {
+      await deleteUser(selectedUser.id);
+      setShowDeleteModal(false);
+      fetchData();
+    } catch (e) {
+      console.error(e);
+      alert(e?.response?.data?.message || "Delete failed");
+    }
   };
 
   return (
@@ -124,10 +114,18 @@ export default function Customers() {
           />
         </div>
 
+        {loading ? (
+          <p className="text-gray-500 mt-6">Loading customers…</p>
+        ) : null}
+
         {/* GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {filteredUsers.map((user) => {
-            const stats = getCustomerStats(user.fullName);
+            const stats = {
+              totalLoans: user.totalLoans,
+              activeLoans: user.activeLoans,
+              totalValue: user.totalLoanAmount,
+            };
 
             return (
               <div
@@ -188,7 +186,12 @@ export default function Customers() {
 
                 <div className="mt-4 text-sm text-gray-600">
                   <p>📧 {user.email}</p>
-                  <p>📞 +91 XXXXX XXXXX</p>
+                  <p>
+                    📞{" "}
+                    {user.mobileNumber
+                      ? `+91 ${user.mobileNumber}`
+                      : "—"}
+                  </p>
                 </div>
 
                 <div className="border-t mt-4 pt-3 flex justify-between text-sm">

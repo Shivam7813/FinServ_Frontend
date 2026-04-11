@@ -2,12 +2,17 @@ import AdminLayout from "../../layouts/AdminLayout";
 import StatCard from "../../components/StatCard";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { getLoggedInDisplayName } from "../../utils/displayName";
 
 // ✅ NEW SERVICE
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function BankDashboard() {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
+  const displayName = getLoggedInDisplayName(authUser);
 
   const [applications, setApplications] = useState([]);
   const [stats, setStats] = useState({
@@ -25,7 +30,7 @@ export default function BankDashboard() {
 
     try {
       // 🔥 CALL CORRECT API
-      const response = await axios.get("http://localhost:8080/api/dashboard");
+      const response = await axios.get(`${API_BASE_URL}/api/dashboard`);
       const data = response.data;
 
       console.log("Dashboard API Response:", data);
@@ -69,16 +74,23 @@ export default function BankDashboard() {
 
   const formatStatus = (status) => status?.replaceAll("_", " ");
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+
   return (
     <AdminLayout>
       {/* HEADER */}
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-semibold">
-            Bank Executive Dashboard 👋
+            {getGreeting()}, {displayName} 👋
           </h2>
           <p className="text-gray-500">
-            Manage loan applications and approvals
+            Bank executive dashboard — manage loan applications and approvals
           </p>
         </div>
 

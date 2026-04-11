@@ -42,14 +42,19 @@ export default function Banks() {
   const handleAdd = async () => {
     if (!formData.name.trim()) return;
 
-    await addBank({
-      ...formData,
-      features: formData.features.split(",").map((f) => f.trim()),
-    });
+    try {
+      await addBank({
+        ...formData,
+        features: formData.features.split(",").map((f) => f.trim()).filter(Boolean),
+      });
 
-    setShowAddModal(false);
-    resetForm();
-    fetchBanks();
+      setShowAddModal(false);
+      resetForm();
+      fetchBanks();
+    } catch (e) {
+      console.error(e);
+      alert(e?.response?.data?.message || e.message || "Could not add bank");
+    }
   };
 
   // ✅ EDIT
@@ -68,14 +73,19 @@ export default function Banks() {
   };
 
   const handleUpdate = async () => {
-    await updateBank(selectedBank.id, {
-      ...formData,
-      features: formData.features.split(",").map((f) => f.trim()),
-    });
+    try {
+      await updateBank(selectedBank.id, {
+        ...formData,
+        features: formData.features.split(",").map((f) => f.trim()).filter(Boolean),
+      });
 
-    setShowEditModal(false);
-    resetForm();
-    fetchBanks();
+      setShowEditModal(false);
+      resetForm();
+      fetchBanks();
+    } catch (e) {
+      console.error(e);
+      alert(e?.response?.data?.message || e.message || "Could not update ROI");
+    }
   };
 
   // ✅ DELETE
@@ -86,9 +96,14 @@ export default function Banks() {
   };
 
   const confirmDelete = async () => {
-    await deleteBank(selectedBank.id);
-    setShowDeleteModal(false);
-    fetchBanks();
+    try {
+      await deleteBank(selectedBank.id);
+      fetchBanks();
+    } catch (e) {
+      alert(e?.message || "Could not delete bank");
+    } finally {
+      setShowDeleteModal(false);
+    }
   };
 
   const resetForm = () => {
@@ -204,7 +219,7 @@ export default function Banks() {
                 <p className="text-sm text-gray-500">
                   Cases this month{" "}
                   <span className="font-semibold text-teal-600">
-                    {Math.floor(Math.random() * 50)}
+                    {bank.casesThisMonth ?? 0}
                   </span>
                 </p>
 

@@ -2,6 +2,7 @@ package com.finserv.serviceImpl;
 
 import com.finserv.dto.CustomerDashboardDTO;
 import com.finserv.dto.RegisterRequestDTO;
+import com.finserv.dto.UserBasicUpdateDTO;
 import com.finserv.dto.UserResponseDTO;
 import com.finserv.entity.*;
 import com.finserv.enums.EmploymentType;
@@ -160,6 +161,36 @@ public class UserServiceImpl implements UserService {
 
         // Employment
         user.getEmploymentDetails().setEmploymentType(dto.getEmploymentType());
+
+        return mapToDTO(userRepository.save(user));
+    }
+
+    @Override
+    @Transactional
+    public UserResponseDTO updateUserBasic(UserBasicUpdateDTO dto) {
+
+        if (dto.getId() == null || dto.getId() <= 0) {
+            throw new BadRequestException("Invalid user ID");
+        }
+
+        User user = userRepository.findById(dto.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            if (!dto.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                throw new BadRequestException("Invalid email format");
+            }
+            user.setEmail(dto.getEmail().trim());
+        }
+
+        if (dto.getFullName() != null && !dto.getFullName().isBlank()) {
+            if (dto.getFullName().length() < 3 || dto.getFullName().length() > 50) {
+                throw new BadRequestException("Name must be 3 to 50 characters");
+            }
+            if (user.getPersonalDetails() != null) {
+                user.getPersonalDetails().setFullName(dto.getFullName().trim());
+            }
+        }
 
         return mapToDTO(userRepository.save(user));
     }
