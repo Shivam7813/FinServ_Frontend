@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
 
 // ✅ SERVICE
 import { applyLoan } from "../../services/applyLoanService";
+import { fetchBanks } from "../../services/userLoanApi";
 
 export default function ApplyLoan() {
+  const navigate = useNavigate();
+  const [banks, setBanks] = useState([]);
+  const [bankId, setBankId] = useState("");
   const [form, setForm] = useState({
     fullName: "",
     mobile: "",
@@ -25,6 +31,22 @@ export default function ApplyLoan() {
   const [documents, setDocuments] = useState({});
   const [errors, setErrors] = useState({});
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const list = await fetchBanks();
+        setBanks(list);
+        if (list.length === 1) {
+          setBankId(String(list[0].id));
+        }
+      } catch (e) {
+        console.error(e);
+        toast.error("Could not load banks. Is the server running?");
+      }
+    };
+    load();
+  }, []);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -40,7 +62,10 @@ export default function ApplyLoan() {
     if (!form.fullName) newErrors.fullName = "Full Name is required";
     if (!form.mobile) newErrors.mobile = "Mobile is required";
     if (!form.loanAmount) newErrors.loanAmount = "Loan Amount is required";
+    if (!form.downPayment) newErrors.downPayment = "Down payment is required";
+    if (!form.tenure) newErrors.tenure = "Tenure is required (6–360, steps of 6)";
     if (!form.carType) newErrors.carType = "Select car type";
+    if (!bankId) newErrors.bankId = "Select a bank";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -60,9 +85,9 @@ export default function ApplyLoan() {
         fullName: user?.name || form.fullName,
       };
 
-      await applyLoan(payload);
+      await applyLoan(payload, Number(bankId));
 
-      alert("Loan Application Submitted 🚀");
+      toast.success("Loan application submitted");
 
       // ✅ RESET FORM
       setForm({
@@ -84,9 +109,15 @@ export default function ApplyLoan() {
 
       setDocuments({});
       setErrors({});
+      setBankId(banks.length === 1 ? String(banks[0].id) : "");
+      navigate("/user/dashboard", { replace: true });
     } catch (err) {
       console.error(err);
-      alert("Something went wrong ❌");
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        "Something went wrong. Please try again.";
+      toast.error(msg);
     }
   };
 
@@ -110,7 +141,7 @@ export default function ApplyLoan() {
             <Input label="PAN Card" name="pan" value={form.pan} onChange={handleChange} />
             <Input label="Aadhaar Number" name="aadhaar" value={form.aadhaar} onChange={handleChange} />
 
-            <Select label="Employment Type" name="employmentType" options={["Salaried", "Self-Employed"]} onChange={handleChange} />
+            <Select label="Employment Type" name="employmentType" value={form.employmentType} options={["Salaried", "Self-Employed"]} onChange={handleChange} />
 
             <Input label="Monthly Income" name="income" value={form.income} onChange={handleChange} />
 
@@ -123,13 +154,38 @@ export default function ApplyLoan() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-            <Select label="Car Type" name="carType" options={["New", "Used"]} onChange={handleChange} error={errors.carType} />
+            <Select label="Car Type" name="carType" value={form.carType} options={["New", "Used"]} onChange={handleChange} error={errors.carType} />
 
             <Input label="Car Model" name="carModel" value={form.carModel} onChange={handleChange} />
             <Input label="Car Price" name="carPrice" value={form.carPrice} onChange={handleChange} />
-            <Input label="Down Payment" name="downPayment" value={form.downPayment} onChange={handleChange} />
+            <Input label="Down Payment" name="downPayment" value={form.downPayment} onChange={handleChange} error={errors.downPayment} />
             <Input label="Loan Amount" name="loanAmount" value={form.loanAmount} onChange={handleChange} error={errors.loanAmount} />
-            <Input label="Loan Tenure (Months)" name="tenure" value={form.tenure} onChange={handleChange} />
+            <Input label="Loan Tenure (months, e.g. 60)" name="tenure" value={form.tenure} onChange={handleChange} error={errors.tenure} />
+
+            <div className="md:col-span-2">
+              <label className="text-sm text-gray-600">Preferred bank</label>
+              <select
+                value={bankId}
+                onChange={(e) => setBankId(e.target.value)}
+                className="w-full mt-1 p-2 border rounded-lg"
+              >
+                <option value="">Select bank</option>
+                {banks.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.bankName}
+                  </option>
+                ))}
+              </select>
+              {errors.bankId && (
+                <p className="text-red-500 text-xs mt-1">{errors.bankId}</p>
+              )}
+              {banks.length === 0 && (
+                <p className="text-amber-600 text-xs mt-1">
+                  No banks in the system yet. An admin must add a bank before you
+                  can apply.
+                </p>
+              )}
+            </div>
 
           </div>
         </div>
@@ -179,12 +235,13 @@ function Input({ label, name, value, onChange, error }) {
   );
 }
 
-function Select({ label, name, options, onChange, error }) {
+function Select({ label, name, value = "", options, onChange, error }) {
   return (
     <div>
       <label className="text-sm text-gray-600">{label}</label>
       <select
         name={name}
+        value={value}
         onChange={onChange}
         className="w-full mt-1 p-2 border rounded-lg"
       >
