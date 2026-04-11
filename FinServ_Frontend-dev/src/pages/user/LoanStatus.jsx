@@ -14,9 +14,9 @@ export default function LoanStatus() {
     const fetchData = async () => {
       const user = JSON.parse(localStorage.getItem("user"));
 
-      if (!user?.name) return;
+      if (!user?.email) return;
 
-      const data = await getUserApplications(user.name);
+      const data = await getUserApplications();
 
       // 🔥 FORMAT DATA (KEEP UI SAME)
       const formatted = data.map((app, index) => ({

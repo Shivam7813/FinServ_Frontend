@@ -1,74 +1,34 @@
 // src/services/userApplicationService.js
 
-import {
-  getApplications,
-  updateApplicationStatus,
-} from "./applicationService";
+import { fetchMyLoansFromApi } from "./userLoanApi";
+import { updateApplicationStatus } from "./applicationService";
 
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
-
 // ==============================
-// ✅ GET USER APPLICATIONS
+// ✅ GET USER APPLICATIONS (API)
 // ==============================
-export const getUserApplications = async (userName) => {
-  await delay(200);
-
-  const apps = await getApplications();
-
-  return (apps || []).filter(
-    (app) => app.fullName === userName
-  );
-};
-
+export const getUserApplications = async () => fetchMyLoansFromApi();
 
 // ==============================
 // ✅ GET USER STATS
 // ==============================
-export const getUserStats = async (userName) => {
-  await delay(200);
-
-  const apps = await getUserApplications(userName);
+export const getUserStats = async () => {
+  const apps = await fetchMyLoansFromApi();
 
   return {
     total: apps.length,
-    underReview: apps.filter((a) => a.status === "UNDER_REVIEW").length,
+    underReview: apps.filter(
+      (a) =>
+        a.status === "UNDER_REVIEW" ||
+        a.status === "SUBMITTED_TO_BANK" ||
+        a.status === "DOCUMENTS_PENDING" ||
+        a.status === "PENDING"
+    ).length,
     approved: apps.filter((a) => a.status === "APPROVED").length,
     rejected: apps.filter((a) => a.status === "REJECTED").length,
   };
 };
-
-
-// ==============================
-// ✅ APPLY LOAN
-// ==============================
-export const applyLoan = async (data) => {
-  await delay(200);
-
-  const apps = await getApplications();
-
-  const newApp = {
-    id: Date.now(),
-    fullName: data.fullName,
-    loanType: data.carType
-      ? `${data.carType} Car Loan`
-      : "Car Loan",
-    loanAmount: Number(data.loanAmount) || 0,
-    status: "PENDING",
-    submittedAt: new Date().toISOString().split("T")[0],
-    ...data,
-  };
-
-  const updatedApps = [...(apps || []), newApp];
-
-  localStorage.setItem(
-    "applications_data",
-    JSON.stringify(updatedApps)
-  );
-
-  return newApp;
-};
-
 
 // ==============================
 // ✅ UPDATE STATUS
