@@ -97,8 +97,6 @@ export default function UserDashboard() {
       {/* Greeting */}
       <h2 className="text-xl font-semibold mb-1">
         {getGreeting()}, {displayName} 👋
-        {getGreeting()},{" "}
-        {user?.name || user?.email?.split("@")[0] || "User"} 👋
       </h2>
 
       <p className="text-gray-500 mb-6">

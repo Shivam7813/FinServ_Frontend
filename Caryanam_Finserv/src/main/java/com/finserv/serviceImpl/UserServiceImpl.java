@@ -1,15 +1,14 @@
 package com.finserv.serviceImpl;
 
-import com.finserv.dto.CustomerDashboardDTO;
-import com.finserv.dto.RegisterRequestDTO;
-import com.finserv.dto.UserBasicUpdateDTO;
-import com.finserv.dto.UserResponseDTO;
+import com.finserv.dto.*;
 import com.finserv.entity.*;
 import com.finserv.enums.EmploymentType;
 import com.finserv.enums.Role;
+import com.finserv.enums.State;
 import com.finserv.exception.BadRequestException;
 import com.finserv.exception.ResourceNotFoundException;
 import com.finserv.repository.PersonalDetailsRepository;
+import com.finserv.repository.UserRegisterRepository;
 import com.finserv.repository.UserRepository;
 import com.finserv.service.UserService;
 
@@ -21,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Random;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -33,6 +33,8 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+
 
     // ✅ REGISTER
     @Override
@@ -165,36 +167,6 @@ public class UserServiceImpl implements UserService {
         return mapToDTO(userRepository.save(user));
     }
 
-    @Override
-    @Transactional
-    public UserResponseDTO updateUserBasic(UserBasicUpdateDTO dto) {
-
-        if (dto.getId() == null || dto.getId() <= 0) {
-            throw new BadRequestException("Invalid user ID");
-        }
-
-        User user = userRepository.findById(dto.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
-            if (!dto.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                throw new BadRequestException("Invalid email format");
-            }
-            user.setEmail(dto.getEmail().trim());
-        }
-
-        if (dto.getFullName() != null && !dto.getFullName().isBlank()) {
-            if (dto.getFullName().length() < 3 || dto.getFullName().length() > 50) {
-                throw new BadRequestException("Name must be 3 to 50 characters");
-            }
-            if (user.getPersonalDetails() != null) {
-                user.getPersonalDetails().setFullName(dto.getFullName().trim());
-            }
-        }
-
-        return mapToDTO(userRepository.save(user));
-    }
-
     // ✅ DELETE
     @Override
     public void deleteUser(Long id) {
@@ -207,17 +179,79 @@ public class UserServiceImpl implements UserService {
         return userRepository.getDashboardData();
     }
 
+
     // 🔥 COMMON MAPPING
     private UserResponseDTO mapToDTO(User user) {
         return UserResponseDTO.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
-                .fullName(
-                        user.getPersonalDetails() != null
-                                ? user.getPersonalDetails().getFullName()
-                                : null
-                )
+                .fullName(user.getFullName())
                 .role(user.getRole())
                 .build();
     }
+
+    //------------------------------------------------------------------
+    //ADMIN
+    @Override
+    @Transactional
+    public UserResponseDTO registerAdmin(AdminRegisterDTO dto) {
+
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new BadRequestException("Email already exists");
+        }
+
+        // ================= USER =================
+        User user = new User();
+        user.setFullName(dto.getFullName());
+        user.setEmail(dto.getEmail());
+        user.setMobileNumber(dto.getMobileNumber());
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setRole(Role.valueOf(dto.getRole())); // ADMIN
+        user.setCreatedAt(LocalDateTime.now());
+
+        User saved = userRepository.save(user);
+        return mapToDTO(saved);
+    }
+
+    //BANK
+    @Override
+    @Transactional
+    public UserResponseDTO registerBank(BankRegisterDTO dto) {
+
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new BadRequestException("Email already exists");
+        }
+
+        // ================= USER =================
+        User user = new User();
+        user.setFullName(dto.getFullName());
+        user.setEmail(dto.getEmail());
+        user.setMobileNumber(dto.getMobileNumber());
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        // ✅ BANK ROLE
+        user.setRole(Role.BANK_EVALUATE);
+        // ✅ NEW FIELDS (ADD IN USER ENTITY)
+        user.setBankName(dto.getBankName());
+        user.setBranchName(dto.getBranchName());
+        user.setEmployeeId(dto.getEmployeeId());
+        user.setCreatedAt(LocalDateTime.now());
+
+
+        User saved = userRepository.save(user);
+        return mapToDTO(saved);
+    }
+
+
+
+
+
+
 }
+    //---------------------------
+
+
+
+
+
+
+

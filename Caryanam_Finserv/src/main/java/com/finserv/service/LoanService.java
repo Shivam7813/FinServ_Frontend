@@ -3,6 +3,7 @@ package com.finserv.service;
 import com.finserv.dto.LoanDashboardDTO;
 import com.finserv.dto.LoanRequestDTO;
 import com.finserv.dto.LoanResponseDTO;
+import com.finserv.dto.PendingDocumentDTO;
 
 import java.util.List;
 
@@ -24,7 +25,7 @@ public interface LoanService {
 
     LoanDashboardDTO getUnderReviewByCase(String caseNumber);
 
-    LoanDashboardDTO getDocumentsPendingByCase(String caseNumber);
+    PendingDocumentDTO getDocumentsPendingByCase(String caseNumber);
 
     LoanDashboardDTO getApprovedByCase(String caseNumber);
 

@@ -49,4 +49,7 @@ public class LoanApplication {
     @ManyToOne
     @JoinColumn(name = "bank_id")
     private Bank bank;
+
+
+
 }

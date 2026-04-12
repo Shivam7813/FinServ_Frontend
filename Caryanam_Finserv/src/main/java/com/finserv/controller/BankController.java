@@ -101,7 +101,7 @@ public class BankController {
     }
 
     // ✅ GET ALL
-    @GetMapping
+    @GetMapping("/getAll")
     public ResponseEntity<List<BankResponseDTO>> getAllBanks() {
         return ResponseEntity.ok(bankService.getAllBanks());
     }
@@ -112,7 +112,7 @@ public class BankController {
             @RequestBody UpdateRoiDTO dto) {
 
         // 1️⃣ ID validation
-        if (dto.getId() == null || dto.getId() <= 0)
+        if (dto.getBankid() == null || dto.getBankid() <= 0)
             throw new BadRequestException("Invalid ID");
 
         // 2️⃣ ROI validation
@@ -125,7 +125,7 @@ public class BankController {
         if (dto.getRoiMin() > dto.getRoiMax())
             throw new BadRequestException("Invalid ROI range");
 
-        return ResponseEntity.ok(bankService.updateRoi(dto.getId(), dto));
+        return ResponseEntity.ok(bankService.updateRoi(dto.getBankid(), dto));
     }
     // ✅ DASHBOARD
     @GetMapping("/dashboard")

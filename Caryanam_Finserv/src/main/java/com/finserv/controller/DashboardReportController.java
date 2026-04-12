@@ -1,9 +1,11 @@
 package com.finserv.controller;
 
-
 import com.finserv.dto.reportDTO.DashboardRequestDTO;
 import com.finserv.dto.reportDTO.DashboardResponseDTO;
+import com.finserv.exception.BadRequestException;
 import com.finserv.service.DashboardReportService;
+
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,17 +22,39 @@ public class DashboardReportController {
         this.service = service;
     }
 
+    // ✅ Common Validation Method
+    private void validateRequest(DashboardRequestDTO request) {
+        if (request == null) {
+            throw new BadRequestException("Request body cannot be null");
+        }
+
+        if (request.getYear() == null) {
+            throw new BadRequestException("Year is required");
+        }
+
+        if (request.getYear() < 2000 || request.getYear() > 2100) {
+            throw new BadRequestException("Year must be between 2000 and 2100");
+        }
+    }
+
     // ✅ Get Dashboard Data
     @PostMapping("/data")
     public ResponseEntity<DashboardResponseDTO> getDashboard(
-            @RequestBody DashboardRequestDTO request
+            @Valid @RequestBody DashboardRequestDTO request
     ) {
-        return ResponseEntity.ok(service.getDashboard(request.getYear()));
+        validateRequest(request);
+
+        DashboardResponseDTO response = service.getDashboard(request.getYear());
+
+        return ResponseEntity.ok(response);
     }
 
-    /// ✅ Export Excel (JSON input)
+    // ✅ Export Excel
     @PostMapping("/excel")
-    public ResponseEntity<byte[]> exportExcel(@RequestBody DashboardRequestDTO request) {
+    public ResponseEntity<byte[]> exportExcel(
+            @Valid @RequestBody DashboardRequestDTO request
+    ) {
+        validateRequest(request);
 
         byte[] file = service.exportExcel(request.getYear());
 
@@ -41,9 +65,12 @@ public class DashboardReportController {
                 .body(file);
     }
 
-    // ✅ Export PDF (JSON input)
+    // ✅ Export PDF
     @PostMapping("/pdf")
-    public ResponseEntity<byte[]> exportPdf(@RequestBody DashboardRequestDTO request) {
+    public ResponseEntity<byte[]> exportPdf(
+            @Valid @RequestBody DashboardRequestDTO request
+    ) {
+        validateRequest(request);
 
         byte[] file = service.exportPdf(request.getYear());
 

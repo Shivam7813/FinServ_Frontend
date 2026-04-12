@@ -29,22 +29,86 @@ export default function BankDashboard() {
     setLoading(true);
 
     try {
-      // 🔥 CALL CORRECT API
       const response = await axios.get(`${API_BASE_URL}/api/dashboard`);
-      const data = response.data;
+      let data = response.data;
 
       console.log("Dashboard API Response:", data);
 
-      // ✅ SET STATS (MAPPED FROM BACKEND)
-      setStats({
-        newApplications: data.activeLoanCases || 0,
-        underReview: data.pendingDocuments || 0,
-        approved: data.approvedToday || 0,
-        rejected: 0, // ❗ not available in backend
-      });
+      // 🔥 HANDLE CASE 1: ARRAY RESPONSE
+      if (Array.isArray(data)) {
+        const apps = data;
+        setApplications(apps);
 
-      // ✅ SET TABLE DATA
-      setApplications(data.recentLoans || []);
+        const newApps = apps.length;
+
+        const underReview = apps.filter(
+          (a) =>
+            a.status === "UNDER_REVIEW" ||
+            a.status === "PENDING" ||
+            a.status === "DOCUMENTS_PENDING"
+        ).length;
+
+        const approved = apps.filter(
+          (a) => a.status === "APPROVED"
+        ).length;
+
+        const rejected = apps.filter(
+          (a) => a.status === "REJECTED"
+        ).length;
+
+        setStats({
+          newApplications: newApps,
+          underReview,
+          approved,
+          rejected,
+        });
+
+      } else {
+        // 🔥 HANDLE CASE 2: OBJECT RESPONSE
+
+        const apps =
+          data.recentLoans ||
+          data.loans ||
+          data.data ||
+          [];
+
+        setApplications(apps);
+
+        // ✅ FIXED LOGIC (IMPORTANT 🔥)
+        const newApplications =
+          data.activeLoanCases && data.activeLoanCases > 0
+            ? data.activeLoanCases
+            : data.totalLoans && data.totalLoans > 0
+            ? data.totalLoans
+            : apps.length;
+
+        const underReview =
+          data.pendingDocuments && data.pendingDocuments > 0
+            ? data.pendingDocuments
+            : apps.filter(
+                (a) =>
+                  a.status === "UNDER_REVIEW" ||
+                  a.status === "PENDING" ||
+                  a.status === "DOCUMENTS_PENDING"
+              ).length;
+
+        const approved =
+          data.approvedToday && data.approvedToday > 0
+            ? data.approvedToday
+            : apps.filter((a) => a.status === "APPROVED").length;
+
+        const rejected =
+          data.rejected && data.rejected > 0
+            ? data.rejected
+            : apps.filter((a) => a.status === "REJECTED").length;
+
+        setStats({
+          newApplications,
+          underReview,
+          approved,
+          rejected,
+        });
+      }
 
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -66,6 +130,7 @@ export default function BankDashboard() {
       case "UNDER_REVIEW":
         return "bg-yellow-100 text-yellow-700";
       case "PENDING":
+      case "DOCUMENTS_PENDING":
         return "bg-blue-100 text-blue-700";
       default:
         return "bg-gray-100 text-gray-700";
@@ -94,7 +159,6 @@ export default function BankDashboard() {
           </p>
         </div>
 
-        {/* 🔥 Refresh Button */}
         <button
           onClick={fetchData}
           className="bg-gray-200 px-3 py-2 rounded hover:bg-gray-300 text-sm"
@@ -103,24 +167,19 @@ export default function BankDashboard() {
         </button>
       </div>
 
-      {/* LOADING */}
       {loading ? (
         <div className="text-center py-10 text-gray-500">
           Loading dashboard...
         </div>
       ) : (
         <>
-          {/* STATS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-
             <StatCard title="New Applications" value={stats.newApplications} color="blue" />
             <StatCard title="Under Review" value={stats.underReview} color="yellow" />
             <StatCard title="Approved" value={stats.approved} color="green" />
             <StatCard title="Rejected" value={stats.rejected} color="red" />
-
           </div>
 
-          {/* QUICK ACCESS */}
           <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
             <h3 className="text-lg font-semibold mb-5">⚡ Quick Access</h3>
 
@@ -141,7 +200,6 @@ export default function BankDashboard() {
             </div>
           </div>
 
-          {/* TABLE */}
           <div className="bg-white rounded-2xl shadow-md p-6">
             <h3 className="text-lg font-semibold mb-5">
               📄 Recent Applications
@@ -165,16 +223,11 @@ export default function BankDashboard() {
                 <tbody>
                   {applications.slice(0, 5).map((app, index) => (
                     <tr key={index} className="border-t hover:bg-gray-50">
-                      {/* 🔥 SAFE FALLBACKS */}
-                      <td className="p-3">{app.fullName || app.customerName || "N/A"}</td>
-                      <td className="p-3">{app.loanType || "N/A"}</td>
+                      <td className="p-3">{app.fullName || app.customerName || app.name || "N/A"}</td>
+                      <td className="p-3">{app.loanType || app.type || "N/A"}</td>
                       <td className="p-3">₹{app.loanAmount || app.amount || 0}</td>
                       <td className="p-3">
-                        <span
-                          className={`px-2 py-1 rounded ${getStatusColor(
-                            app.status
-                          )}`}
-                        >
+                        <span className={`px-2 py-1 rounded ${getStatusColor(app.status)}`}>
                           {formatStatus(app.status || "PENDING")}
                         </span>
                       </td>
