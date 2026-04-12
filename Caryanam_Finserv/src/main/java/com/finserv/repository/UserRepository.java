@@ -19,20 +19,27 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("""
 
-            SELECT new com.finserv.dto.CustomerDashboardDTO(
+    SELECT new com.finserv.dto.CustomerDashboardDTO(
     u.id,
     p.fullName,
     u.email,
     u.mobileNumber,
     p.panNumber,
-    COUNT(l.id),
+    COUNT(l),
     SUM(CASE WHEN l.status = 'APPROVED' THEN 1L ELSE 0L END),
-    COALESCE(SUM(l.loanAmount), 0)
-)
-FROM User u
-LEFT JOIN u.personalDetails p
-LEFT JOIN LoanApplication l ON l.user.id = u.id
-GROUP BY u.id, p.fullName, u.email, u.mobileNumber
+    COALESCE(SUM(l.loanAmount), 0.0)
+            )
+    FROM User u
+    LEFT JOIN u.personalDetails p
+    LEFT JOIN u.loanApplications l
+    GROUP BY
+    u.id,
+    p.fullName,
+    u.email,
+    u.mobileNumber,
+    p.panNumber
 """)
     List<CustomerDashboardDTO> getDashboardData();
-    }
+
+
+ }

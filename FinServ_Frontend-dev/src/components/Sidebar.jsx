@@ -66,7 +66,7 @@ export default function Sidebar() {
       { icon: <LayoutDashboard size={20} />, text: "Dashboard", to: "/user/dashboard" },
       { icon: <FileText size={20} />, text: "Apply Loan", to: "/user/apply-loan" },
       { icon: <ClipboardCheck size={20} />, text: "My Applications", to: "/user/applications" },
-      { icon: <Folder size={20} />, text: "My Documents", to: "/user/documents" },
+      // { icon: <Folder size={20} />, text: "My Documents", to: "/user/documents" },
       { icon: <CreditCard size={20} />, text: "Loan Offers", to: "/user/offers" },
       { icon: <BarChart size={20} />, text: "Loan Status", to: "/user/loan-status" },
       { icon: <Settings size={20} />, text: "Settings", to: "/user/settings" },

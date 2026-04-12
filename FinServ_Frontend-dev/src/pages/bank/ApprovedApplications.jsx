@@ -1,7 +1,8 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function ApprovedApplications() {
   const navigate = useNavigate();
@@ -14,8 +15,10 @@ export default function ApprovedApplications() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
+
         const response = await axios.get(
-          "http://localhost:8080/api/loans/dashboard"
+          `${API_BASE_URL}/api/loans/dashboard`
         );
 
         setApplications(response.data || []);
@@ -29,23 +32,26 @@ export default function ApprovedApplications() {
     fetchData();
   }, []);
 
-  // 🔥 FILTER APPROVED
-  const filteredApps = applications.filter((app) => {
-    const name = app?.customerName || "";
+  // ✅ FILTER (SEARCH + APPROVED)
+  const filteredApps = useMemo(() => {
+    return applications.filter((app) => {
+      const name = app?.customerName || "";
+      const caseNumber = app?.caseNumber || "";
 
-    const matchesSearch = name
-      .toLowerCase()
-      .includes(search.toLowerCase());
+      const matchesSearch =
+        name.toLowerCase().includes(search.toLowerCase()) ||
+        caseNumber.toLowerCase().includes(search.toLowerCase());
 
-    return matchesSearch && app?.status === "APPROVED";
-  });
+      return matchesSearch && app?.status === "APPROVED";
+    });
+  }, [applications, search]);
 
   return (
     <AdminLayout>
       <div className="p-4">
 
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
           <h2 className="text-2xl font-semibold text-green-600">
             Approved Applications
           </h2>
@@ -59,7 +65,7 @@ export default function ApprovedApplications() {
         <div className="mb-5">
           <input
             type="text"
-            placeholder="Search applicant..."
+            placeholder="Search by applicant or case..."
             className="border px-3 py-2 rounded-lg w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-400"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -83,7 +89,7 @@ export default function ApprovedApplications() {
               const name = app?.customerName || "N/A";
               const loanType = app?.loanType || "N/A";
               const amount = app?.loanAmount || 0;
-              const caseNumber = app?.caseNumber;
+              const caseNumber = app?.caseNumber || app?.id;
 
               return (
                 <div
@@ -93,7 +99,7 @@ export default function ApprovedApplications() {
                   {/* LEFT */}
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-green-100 text-green-600 flex items-center justify-center rounded-full font-semibold">
-                      {name.charAt(0)}
+                      {name.charAt(0).toUpperCase()}
                     </div>
 
                     <div>
@@ -102,7 +108,7 @@ export default function ApprovedApplications() {
                       </h3>
 
                       <p className="text-sm text-gray-500">
-                        {loanType} • ₹{amount}
+                        {loanType} • ₹{Number(amount).toLocaleString()}
                       </p>
 
                       <span className="inline-block mt-2 px-3 py-1 text-xs rounded-full bg-green-100 text-green-700">
@@ -111,7 +117,7 @@ export default function ApprovedApplications() {
                     </div>
                   </div>
 
-                  {/* ✅ REVIEW BUTTON (FIXED ROUTE) */}
+                  {/* ACTION */}
                   <button
                     onClick={() =>
                       navigate(`/bank/review/${caseNumber}`)

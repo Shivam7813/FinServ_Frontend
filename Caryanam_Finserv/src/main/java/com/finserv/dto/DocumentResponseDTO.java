@@ -14,4 +14,6 @@ public class DocumentResponseDTO {
     private String fileName;
     private DocumentStatus status;
     private LocalDate uploadDate;
+    private String base64;
+    private String image; // Base64
 }

@@ -41,6 +41,13 @@ export default function Documents() {
     NEEDS_CORRECTION: "bg-orange-100 text-orange-600",
   };
 
+  // ✅ View handler
+  const handleView = (docId) => {
+    // Adjust URL as per your backend
+    const url = `http://localhost:8080/api/documents/preview/${docId}`;
+    window.open(url, "_blank");
+  };
+
   return (
     <AdminLayout>
       <div className="p-6">
@@ -88,10 +95,17 @@ export default function Documents() {
                       className="border rounded-lg p-3 hover:shadow-sm transition"
                     >
                       <p className="font-medium">{doc.name}</p>
-                      <p className="text-xs text-gray-400 truncate" title={doc.fileName}>
+
+                      <p
+                        className="text-xs text-gray-400 truncate"
+                        title={doc.fileName}
+                      >
                         {doc.fileName}
                       </p>
-                      <p className="text-xs text-gray-400">{doc.uploadDate || "—"}</p>
+
+                      <p className="text-xs text-gray-400">
+                        {doc.uploadDate || "—"}
+                      </p>
 
                       <span
                         className={`mt-2 inline-block px-2 py-1 text-xs rounded-full ${
@@ -101,6 +115,14 @@ export default function Documents() {
                       >
                         {String(doc.status || "").replaceAll("_", " ")}
                       </span>
+
+                      {/* ✅ VIEW BUTTON ADDED */}
+                      <button
+                        onClick={() => handleView(doc.id)}
+                        className="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white text-xs py-1.5 rounded-lg"
+                      >
+                        View
+                      </button>
                     </div>
                   ))
                 ) : (

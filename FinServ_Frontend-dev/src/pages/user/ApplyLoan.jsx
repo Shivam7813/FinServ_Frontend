@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
+import axios from "axios";
 
 // ✅ SERVICE
 import { applyLoan } from "../../services/applyLoanService";
@@ -71,6 +72,18 @@ export default function ApplyLoan() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const uploadSingleDocument = async (loanId, type, file) => {
+  const formData = new FormData();
+  formData.append("loanId", loanId);
+  formData.append("type", type);
+  formData.append("file", file);
+
+  return axios.post("http://localhost:8080/api/documents/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+    };
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -85,7 +98,59 @@ export default function ApplyLoan() {
         fullName: user?.name || form.fullName,
       };
 
-      await applyLoan(payload, Number(bankId));
+      const response = await applyLoan(payload, Number(bankId));
+
+    // 🔥 GET LOAN ID (VERY IMPORTANT)
+    // ✅ GET LOAN ID (robust extraction)
+const loanId =
+  response?.data?.id ??
+  response?.data?.loanId ??
+  response?.id ??
+  response?.loanId;
+
+console.log("Loan Response:", response);
+console.log("Loan ID:", loanId);
+
+// ❌ STOP if loanId missing
+if (!loanId) {
+  console.error("Loan ID missing. Full response:", response);
+  toast.error("Loan created but Loan ID not found!");
+  return;
+}
+
+// ✅ SAFE upload helper (prevents crash)
+const uploadSafe = async (type, file) => {
+  try {
+    await uploadSingleDocument(loanId, type, file);
+    console.log(`${type} uploaded successfully`);
+  } catch (error) {
+    console.error(`${type} upload failed`, error);
+  }
+};
+
+console.log("Uploading documents for loanId:", loanId);
+console.log("Documents:", documents);
+
+const uploadPromises = [];
+
+if (documents?.aadhaarDoc) {
+  uploadPromises.push(uploadSafe("AADHAAR", documents.aadhaarDoc));
+}
+
+if (documents?.panDoc) {
+  uploadPromises.push(uploadSafe("PAN", documents.panDoc));
+}
+
+if (documents?.salarySlips) {
+  uploadPromises.push(uploadSafe("SALARY_SLIP", documents.salarySlips));
+}
+
+if (documents?.bankStatements) {
+  uploadPromises.push(uploadSafe("BANK_STATEMENT", documents.bankStatements));
+}
+
+// 🔥 Run all uploads together
+await Promise.all(uploadPromises);
 
       toast.success("Loan application submitted");
 
@@ -192,15 +257,156 @@ export default function ApplyLoan() {
 
         {/* DOCUMENTS */}
         <div>
-          <h3 className="font-semibold mb-3">Upload Documents</h3>
+  <h3 className="font-semibold mb-3 text-lg text-gray-800">
+    Upload Documents
+  </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FileInput label="Aadhaar Card" name="aadhaarDoc" onChange={handleFileChange} />
-            <FileInput label="PAN Card" name="panDoc" onChange={handleFileChange} />
-            <FileInput label="Salary Slips" name="salarySlips" onChange={handleFileChange} />
-            <FileInput label="Bank Statements" name="bankStatements" onChange={handleFileChange} />
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    {/* Aadhaar */}
+    <div className="border rounded-xl p-4 bg-white shadow-sm">
+      <FileInput label="Aadhaar Card" name="aadhaarDoc" onChange={handleFileChange} />
+
+      {documents?.aadhaarDoc && (
+        <div className="mt-2 flex items-center justify-between bg-gray-50 p-2 rounded-lg">
+          <span className="text-xs truncate w-[65%]">
+            {documents.aadhaarDoc.name}
+          </span>
+
+          <div className="flex gap-2">
+            {/* View */}
+            <button
+              type="button"
+              onClick={() =>
+                window.open(URL.createObjectURL(documents.aadhaarDoc), "_blank")
+              }
+              className="text-blue-500 text-xs"
+            >
+              View
+            </button>
+
+            {/* Remove */}
+            <button
+              type="button"
+              onClick={() =>
+                setDocuments((prev) => ({ ...prev, aadhaarDoc: null }))
+              }
+              className="text-red-500 text-xs"
+            >
+              ✕
+            </button>
           </div>
         </div>
+      )}
+    </div>
+
+    {/* PAN */}
+    <div className="border rounded-xl p-4 bg-white shadow-sm">
+      <FileInput label="PAN Card" name="panDoc" onChange={handleFileChange} />
+
+      {documents?.panDoc && (
+        <div className="mt-2 flex items-center justify-between bg-gray-50 p-2 rounded-lg">
+          <span className="text-xs truncate w-[65%]">
+            {documents.panDoc.name}
+          </span>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                window.open(URL.createObjectURL(documents.panDoc), "_blank")
+              }
+              className="text-blue-500 text-xs"
+            >
+              View
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setDocuments((prev) => ({ ...prev, panDoc: null }))
+              }
+              className="text-red-500 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Salary Slips */}
+    <div className="border rounded-xl p-4 bg-white shadow-sm">
+      <FileInput label="Salary Slips" name="salarySlips" onChange={handleFileChange} />
+
+      {documents?.salarySlips && (
+        <div className="mt-2 flex items-center justify-between bg-gray-50 p-2 rounded-lg">
+          <span className="text-xs truncate w-[65%]">
+            {documents.salarySlips.name}
+          </span>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                window.open(URL.createObjectURL(documents.salarySlips), "_blank")
+              }
+              className="text-blue-500 text-xs"
+            >
+              View
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setDocuments((prev) => ({ ...prev, salarySlips: null }))
+              }
+              className="text-red-500 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+
+    {/* Bank Statements */}
+    <div className="border rounded-xl p-4 bg-white shadow-sm">
+      <FileInput label="Bank Statements" name="bankStatements" onChange={handleFileChange} />
+
+      {documents?.bankStatements && (
+        <div className="mt-2 flex items-center justify-between bg-gray-50 p-2 rounded-lg">
+          <span className="text-xs truncate w-[65%]">
+            {documents.bankStatements.name}
+          </span>
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                window.open(URL.createObjectURL(documents.bankStatements), "_blank")
+              }
+              className="text-blue-500 text-xs"
+            >
+              View
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                setDocuments((prev) => ({ ...prev, bankStatements: null }))
+              }
+              className="text-red-500 text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+
+  </div>
+</div>
 
         {/* SUBMIT */}
         <button

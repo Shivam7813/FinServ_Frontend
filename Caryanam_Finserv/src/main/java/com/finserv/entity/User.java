@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -33,9 +34,16 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private EmploymentDetails employmentDetails;
 
+    @OneToMany(mappedBy = "user")
+    private List<LoanApplication> loanApplications;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference
     private Address address;
+    private String fullName;
+    private String bankName;
+    private String branchName;
+    private String employeeId;
 
     private LocalDateTime createdAt;
 

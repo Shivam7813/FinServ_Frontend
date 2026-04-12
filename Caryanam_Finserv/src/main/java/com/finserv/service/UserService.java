@@ -1,9 +1,6 @@
 package com.finserv.service;
 
-import com.finserv.dto.CustomerDashboardDTO;
-import com.finserv.dto.RegisterRequestDTO;
-import com.finserv.dto.UserBasicUpdateDTO;
-import com.finserv.dto.UserResponseDTO;
+import com.finserv.dto.*;
 
 import java.util.List;
 
@@ -21,9 +18,13 @@ public interface UserService {
 
     UserResponseDTO updateUser(Long userId, RegisterRequestDTO dto);
 
-    UserResponseDTO updateUserBasic(UserBasicUpdateDTO dto);
-
     void deleteUser(Long userId);
 
     List<CustomerDashboardDTO> getDashboard();
+    //------------------------------------------------------------------
+    UserResponseDTO registerAdmin(AdminRegisterDTO dto);
+
+    UserResponseDTO registerBank(BankRegisterDTO dto);
+
+
 }

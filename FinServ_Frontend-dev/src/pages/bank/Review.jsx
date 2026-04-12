@@ -17,6 +17,9 @@ export default function Review() {
   const [showRemarkModal, setShowRemarkModal] = useState(false);
   const [remark, setRemark] = useState("");
 
+  // ✅ NEW: Preview modal state
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   // ✅ FETCH DATA
   const fetchData = async () => {
     setLoading(true);
@@ -114,9 +117,10 @@ export default function Review() {
     setUpdating(false);
   };
 
-  // ✅ PREVIEW FUNCTION
+  // ✅ UPDATED PREVIEW (uses API URL)
   const handlePreview = (docId) => {
-    window.open(`${API_BASE_URL}/api/documents/preview/${docId}`, "_blank");
+    const url = `http://localhost:8080/api/documents/preview/${docId}`;
+    setPreviewUrl(url);
   };
 
   const handleSaveRemark = () => {
@@ -162,49 +166,66 @@ export default function Review() {
             {application.customerName}
           </h2>
           <p>{application.loanType} • ₹{application.loanAmount}</p>
+          <p className="text-sm mt-1">Submitted: {application.submittedAt}</p>
+
           <span className={`mt-2 inline-block px-3 py-1 rounded ${getStatusStyle(status)}`}>
             {formatStatus(status)}
           </span>
         </div>
 
         {/* DOCUMENTS */}
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h3 className="font-semibold mb-2">Documents</h3>
+        <div className="bg-white p-5 rounded-xl shadow">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-lg text-gray-800">
+              Documents
+            </h3>
+            <span className="text-sm text-gray-500">
+              Total: {documents.length}
+            </span>
+          </div>
 
           {documents.length === 0 ? (
-            <p>No documents</p>
+            <p className="text-gray-400 text-sm">No documents uploaded</p>
           ) : (
-            documents.map((doc) => (
-              <div key={doc.id} className="flex justify-between items-center p-2 border rounded mb-2">
+            <div className="grid md:grid-cols-2 gap-4">
+              {documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="border rounded-xl p-4 hover:shadow-md transition"
+                >
+                  <p className="font-medium text-gray-800">
+                    {doc.documentType || "Document"}
+                  </p>
 
-                {/* NAME */}
-                <span>{doc.documentType || "Document"}</span>
+                  <p className="text-xs text-gray-400 mt-1 truncate">
+                    {doc.fileName || "No file name"}
+                  </p>
 
-                {/* ACTIONS */}
-                <div className="flex items-center gap-3">
+                  <p className="text-xs text-gray-400">
+                    {doc.uploadDate || "—"}
+                  </p>
 
-                  {/* PREVIEW BUTTON */}
-                  {doc.id ? (
-                    <button
-                      onClick={() => handlePreview(doc.id)}
-                      className="text-blue-600 underline text-sm"
-                    >
-                      View
-                    </button>
-                  ) : (
-                    <span className="text-gray-400 text-sm">
-                      Not Available
+                  <div className="flex justify-between items-center mt-4">
+                    <span className={`${getStatusStyle(doc.status)} px-3 py-1 rounded-full text-xs`}>
+                      {formatStatus(doc.status)}
                     </span>
-                  )}
 
-                  {/* STATUS */}
-                  <span className={`${getStatusStyle(doc.status)} px-2 py-1 rounded text-sm`}>
-                    {formatStatus(doc.status)}
-                  </span>
-
+                    {doc.id ? (
+                      <button
+                        onClick={() => handlePreview(doc.id)}
+                        className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs hover:bg-blue-100"
+                      >
+                        👁 View
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 text-xs">
+                        Not Available
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
 
@@ -232,6 +253,33 @@ export default function Review() {
             </button>
           </div>
         </div>
+
+        {/* PREVIEW MODAL */}
+        {previewUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+
+            <div
+              className="absolute inset-0 bg-black opacity-50"
+              onClick={() => setPreviewUrl(null)}
+            ></div>
+
+            <div className="relative bg-white w-[90%] h-[80%] rounded-xl shadow z-50">
+
+              <button
+                onClick={() => setPreviewUrl(null)}
+                className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded"
+              >
+                ✕
+              </button>
+
+              <iframe
+                src={previewUrl}
+                title="Document Preview"
+                className="w-full h-full rounded-xl"
+              />
+            </div>
+          </div>
+        )}
 
         {/* REMARK MODAL */}
         {showRemarkModal && (

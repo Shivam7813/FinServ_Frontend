@@ -5,6 +5,7 @@ import com.finserv.enums.EmploymentType;
 import com.finserv.exception.BadRequestException;
 import com.finserv.service.UserService;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,10 +19,14 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    //  REGISTER USER (ALL VALIDATION HERE)
+    // ✅ REGISTER USER
     @PostMapping("/users")
     public ResponseEntity<UserResponseDTO> registerUser(
-            @RequestBody RegisterRequestDTO dto) {
+            @Valid @RequestBody RegisterRequestDTO dto) {
+
+        if (dto == null) {
+            throw new BadRequestException("Request body is missing");
+        }
 
         // 1️⃣ EMAIL
         if (dto.getEmail() == null || dto.getEmail().isBlank())
@@ -75,10 +80,6 @@ public class UserController {
         if (!dto.getAadhaarNumber().matches("^[0-9]{12}$"))
             throw new BadRequestException("Invalid Aadhaar");
 
-        // 🔥 EXTRA (missing earlier)
-        if (dto.getMobileNumber() == null || !dto.getMobileNumber().matches("^[0-9]{10}$"))
-            throw new BadRequestException("Invalid mobile number");
-
         // 6️⃣ ADDRESS
         if (dto.getAddressLine1() == null || dto.getAddressLine1().isBlank())
             throw new BadRequestException("Address Line 1 is required");
@@ -102,7 +103,6 @@ public class UserController {
         if (dto.getEmploymentType() == null)
             throw new BadRequestException("Employment type is required");
 
-        // SALARIED
         if (dto.getEmploymentType() == EmploymentType.SALARIED) {
 
             if (dto.getCompanyName() == null || dto.getCompanyName().isBlank())
@@ -115,7 +115,6 @@ public class UserController {
                 throw new BadRequestException("Valid work experience required");
         }
 
-        // BUSINESS / SELF EMPLOYED
         if (dto.getEmploymentType() == EmploymentType.BUSINESS ||
                 dto.getEmploymentType() == EmploymentType.SELF_EMPLOYED) {
 
@@ -129,66 +128,65 @@ public class UserController {
         return ResponseEntity.status(201).body(userService.registerUser(dto));
     }
 
-    // GET ALL
-    @GetMapping("/users")
+    // ✅ GET ALL
+    @GetMapping("/getAllUser")
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    // GET BY ID
+    // ✅ GET BY ID
     @PostMapping("/users/get-by-id")
     public ResponseEntity<UserResponseDTO> getUserById(
-            @RequestBody IdRequestDTO request) {
+            @Valid @RequestBody IdRequestDTO request) {
 
-        // 1️⃣ DTO null
         if (request == null) {
             throw new BadRequestException("Request body is missing");
         }
 
-        // 2️⃣ ID validation
-        if (request.getId() == null || request.getId() <= 0) {
+        if (request.getUserid() == null || request.getUserid() <= 0) {
             throw new BadRequestException("Invalid ID");
         }
 
-        return ResponseEntity.ok(userService.getUserById(request.getId()));
+        return ResponseEntity.ok(userService.getUserById(request.getUserid()));
     }
 
-    // DELETE
+    // ✅ DELETE
     @DeleteMapping("/users/delete")
     public ResponseEntity<String> deleteUser(
-            @RequestBody IdRequestDTO request) {
+            @Valid @RequestBody IdRequestDTO request) {
 
-        // 1️⃣ Request null
         if (request == null) {
             throw new BadRequestException("Request body is missing");
         }
 
-        // 2️⃣ ID validation
-        if (request.getId() == null || request.getId() <= 0) {
+        if (request.getUserid() == null || request.getUserid() <= 0) {
             throw new BadRequestException("Invalid ID");
         }
 
-        userService.deleteUser(request.getId());
+        userService.deleteUser(request.getUserid());
 
         return ResponseEntity.ok("User deleted successfully");
     }
 
-    // SEARCH
+    // ✅ DASHBOARD
+    @GetMapping("/users/dashboard")
+    public ResponseEntity<List<CustomerDashboardDTO>> getDashboard() {
+        return ResponseEntity.ok(userService.getDashboard());
+    }
+
+    // ✅ SEARCH
     @PostMapping("/users/search")
     public ResponseEntity<List<UserResponseDTO>> searchUsers(
-            @RequestBody SearchRequestDTO request) {
+            @Valid @RequestBody SearchRequestDTO request) {
 
-        // 1️⃣ Request null
         if (request == null) {
             throw new BadRequestException("Request body is missing");
         }
 
-        // 2️⃣ Name validation
         if (request.getName() == null || request.getName().isBlank()) {
             throw new BadRequestException("Name is required");
         }
 
-        // 🔥 EXTRA (length validation)
         if (request.getName().length() < 2 || request.getName().length() > 50) {
             throw new BadRequestException("Name must be 2-50 characters");
         }
@@ -198,23 +196,19 @@ public class UserController {
         );
     }
 
-    @PutMapping("/users/basic")
-    public ResponseEntity<UserResponseDTO> updateUserBasic(
-            @RequestBody UserBasicUpdateDTO body) {
+    // ✅ ADMIN REGISTER
+    @PostMapping("/admin/register")
+    public ResponseEntity<UserResponseDTO> registerAdmin(
+            @Valid @RequestBody AdminRegisterDTO dto) {
 
-        if (body == null) {
-            throw new BadRequestException("Request body is missing");
-        }
-        if (body.getId() == null || body.getId() <= 0) {
-            throw new BadRequestException("Invalid user ID");
-        }
-
-        return ResponseEntity.ok(userService.updateUserBasic(body));
+        return ResponseEntity.ok(userService.registerAdmin(dto));
     }
 
-    // DASHBOARD
-    @GetMapping("/users/dashboard")
-    public ResponseEntity<List<CustomerDashboardDTO>> getDashboard() {
-        return ResponseEntity.ok(userService.getDashboard());
+    // ✅ BANK REGISTER
+    @PostMapping("/bank/register")
+    public ResponseEntity<UserResponseDTO> registerBank(
+            @Valid @RequestBody BankRegisterDTO dto) {
+
+        return ResponseEntity.ok(userService.registerBank(dto));
     }
 }
