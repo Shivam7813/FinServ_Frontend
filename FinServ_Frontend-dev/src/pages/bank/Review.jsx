@@ -20,7 +20,7 @@ export default function Review() {
   const [remark, setRemark] = useState("");
 
   // ✅ NEW: Preview modal state
-  const [previewUrl, setPreviewUrl] = useState(null);
+  // const [previewUrl, setPreviewUrl] = useState(null);
 
   // ✅ FETCH DATA
   const fetchData = async () => {
@@ -33,13 +33,19 @@ export default function Review() {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      if (!res.data || res.data.length === 0) {
-        setApplication(null);
-        setLoading(false);
-        return;
-      }
+      console.log("FULL API RESPONSE:", res.data);
 
-      const raw = res.data[0];
+const list =
+  res.data?.content ||   // Spring pageable
+  res.data?.data ||      // wrapped response
+  res.data || [];        // direct array
+
+if (!Array.isArray(list) || list.length === 0) {
+  setApplication(null);
+  return;
+}
+
+const raw = list[0];
 
       const mapped = {
   id: raw.id,
@@ -175,7 +181,7 @@ try {
   // ✅ UPDATED PREVIEW (uses API URL)
     const handlePreview = (docId) => {
       const url = `${API_BASE_URL}/api/documents/preview/${docId}`;
-      setPreviewUrl(url);
+      window.open(url, "_blank");
     };
 
   const handleSaveRemark = async () => {
@@ -216,6 +222,15 @@ try {
       </AdminLayout>
     );
   }
+  if (!application) {
+  return (
+    <AdminLayout>
+      <div className="p-10 text-center text-red-500">
+        No application data found
+      </div>
+    </AdminLayout>
+  );
+}
 
   // if (!application) {
   //   return (
@@ -242,35 +257,36 @@ try {
         ← Back to cases
       </button>
 
-      {/* 🔥 TOP SUMMARY BAR */}
-      <div className="bg-white rounded-2xl shadow p-6 flex justify-between items-center flex-wrap gap-4 border">
+     {/* 🔥 TOP SUMMARY BAR */}
+<div className="bg-white rounded-2xl shadow p-6 flex justify-between items-center flex-wrap gap-4 border">
 
-        <div>
-          <h2 className="text-xl font-semibold text-gray-800">
-            {application.customerName}
-          </h2>
+  <div>
+    <h2 className="text-xl font-semibold text-gray-800">
+      {application?.customerName || "N/A"}
+    </h2>
 
-          <p className="text-gray-500 text-sm mt-1">
-            {application.loanType} • ₹{Number(application.loanAmount).toLocaleString()}
-          </p>
+    <p className="text-gray-500 text-sm mt-1">
+      {application?.loanType || "N/A"} • ₹{Number(application?.loanAmount || 0).toLocaleString()}
+    </p>
 
-          <p className="text-xs text-gray-400 mt-1">
-            Submitted: {application.submittedAt}
-          </p>
-        </div>
+    <p className="text-xs text-gray-400 mt-1">
+      Submitted: {application?.submittedAt || "N/A"}
+    </p>
+  </div>
 
-        {application.adminRemark && (
-          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-gray-700">
-            <strong>Remark:</strong> {application.adminRemark}
-          </div>
-        )}
+  {application?.adminRemark && (
+    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-gray-700">
+      <strong>Remark:</strong> {application?.adminRemark}
+    </div>
+  )}
 
-        <span
-          className={`px-4 py-1 rounded-full text-sm font-semibold ${getStatusStyle(status)}`}
-        >
-          {formatStatus(status)}
-        </span>
-      </div>
+  <span
+    className={`px-4 py-1 rounded-full text-sm font-semibold ${getStatusStyle(status)}`}
+  >
+    {formatStatus(status)}
+  </span>
+
+</div>
 
       {/* 🔥 DOCUMENTS (ADMIN TABLE STYLE) */}
 <div className="bg-white rounded-2xl shadow p-6 border">
@@ -397,25 +413,8 @@ try {
       </div>
 
       {/* PREVIEW MODAL (UNCHANGED) */}
-      {previewUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black opacity-50"
-            onClick={() => setPreviewUrl(null)}
-          ></div>
-
-          <div className="relative bg-white w-[90%] h-[80%] rounded-xl shadow z-50">
-            <button
-              onClick={() => setPreviewUrl(null)}
-              className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded"
-            >
-              ✕
-            </button>
-
-  
-          </div>
-        </div>
-      )}
+      
+      
 
       {/* REMARK MODAL (UNCHANGED) */}
       {showRemarkModal && (

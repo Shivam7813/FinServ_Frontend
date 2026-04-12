@@ -1,5 +1,11 @@
 package com.finserv.repository;
 
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import com.finserv.dto.LoanDashboardDTO;
 import com.finserv.dto.RecentLoanDTO;
 import com.finserv.dto.reportDTO.BankDistributionDTO;
@@ -8,12 +14,6 @@ import com.finserv.dto.reportDTO.MonthlyDisbursementDTO;
 import com.finserv.dto.reportDTO.MonthlyStatusDTO;
 import com.finserv.entity.LoanApplication;
 import com.finserv.enums.LoanStatus;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface LoanApplicationRepository extends JpaRepository<LoanApplication, Long> {
 
@@ -79,16 +79,15 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
     List<RecentLoanDTO> getRecentLoans(org.springframework.data.domain.Pageable pageable);
 
     @Query("""
-                SELECT l
-                FROM LoanApplication l
-                LEFT JOIN l.user u
-                LEFT JOIN u.personalDetails pd
-                WHERE (:caseNumber IS NULL OR l.caseNumber = :caseNumber)
-                AND (:name IS NULL OR LOWER(pd.fullName) LIKE LOWER(CONCAT('%', :name, '%')))
-            """)
-    List<LoanApplication> searchLoans(@Param("caseNumber") String caseNumber,
-                                      @Param("name") String name);
-
+            SELECT l
+            FROM LoanApplication l
+            LEFT JOIN l.user u
+            LEFT JOIN u.personalDetails pd
+            WHERE (:caseNumber IS NULL OR LOWER(l.caseNumber) LIKE LOWER(CONCAT('%', :caseNumber, '%')))
+            AND (:name IS NULL OR :name = '' OR LOWER(pd.fullName) LIKE LOWER(CONCAT('%', :name, '%')))
+        """)
+        List<LoanApplication> searchLoans(@Param("caseNumber") String caseNumber,
+                                        @Param("name") String name);
 
     //report dashboard
 
