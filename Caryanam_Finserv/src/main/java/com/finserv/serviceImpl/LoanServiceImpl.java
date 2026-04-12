@@ -28,6 +28,12 @@ import java.util.*;
 @Service
 public class LoanServiceImpl implements LoanService {
 
+    private static final Set<LoanStatus> ADMIN_PRE_BANK_STATUSES = Collections.unmodifiableSet(EnumSet.of(
+            LoanStatus.PENDING,
+            LoanStatus.UNDER_REVIEW,
+            LoanStatus.DOCUMENTS_PENDING
+    ));
+
     @Autowired
     private LoanApplicationRepository loanRepo;
 
@@ -156,7 +162,8 @@ public class LoanServiceImpl implements LoanService {
                     bankName,
                     l.getStatus(),
                     l.getCreatedDate(),
-                    missingDocuments
+                    missingDocuments,
+                    l.getAdminRemark()
             );
 
             result.add(dto);
@@ -189,8 +196,8 @@ public class LoanServiceImpl implements LoanService {
             throw new RuntimeException("Loan not found");
         }
 
-        // ✅ Check valid stage
-        if (loan.getStatus() != LoanStatus.SUBMITTED_TO_BANK) {
+        if (loan.getStatus() != LoanStatus.SUBMITTED_TO_BANK
+                && loan.getStatus() != LoanStatus.ASSIGNED_TO_BANK) {
             throw new RuntimeException("Loan not in bank stage");
         }
 
@@ -221,8 +228,8 @@ public class LoanServiceImpl implements LoanService {
             throw new RuntimeException("Loan not found");
         }
 
-        // ✅ Check valid stage
-        if (loan.getStatus() != LoanStatus.SUBMITTED_TO_BANK) {
+        if (loan.getStatus() != LoanStatus.SUBMITTED_TO_BANK
+                && loan.getStatus() != LoanStatus.ASSIGNED_TO_BANK) {
             throw new RuntimeException("Loan not in bank stage");
         }
 
@@ -354,8 +361,9 @@ public class LoanServiceImpl implements LoanService {
             throw new RuntimeException("Loan not found");
         }
 
-        if (loan.getStatus() != LoanStatus.REJECTED) {
-            throw new RuntimeException("Only REJECTED loans can be deleted");
+        if (loan.getStatus() != LoanStatus.REJECTED
+                && loan.getStatus() != LoanStatus.REJECTED_BY_ADMIN) {
+            throw new RuntimeException("Only rejected loans can be deleted");
         }
 
         loan.setIsDeleted(true);
@@ -420,7 +428,72 @@ public class LoanServiceImpl implements LoanService {
                 bank,
                 l.getStatus(),
                 l.getCreatedDate(),
-                missingDocs
+                missingDocs,
+                l.getAdminRemark()
         );
+    }
+
+    @Override
+    @Transactional
+    public String assignBankByAdmin(String caseNumber, Long bankId) {
+
+        LoanApplication loan = loanRepo.findByCaseNumber(caseNumber);
+
+        if (loan == null) {
+            throw new RuntimeException("Loan not found");
+        }
+
+        if (!ADMIN_PRE_BANK_STATUSES.contains(loan.getStatus())) {
+            throw new RuntimeException("Only pending / under-review cases can be assigned to a bank");
+        }
+
+        Bank bank = bankRepo.findById(bankId)
+                .orElseThrow(() -> new RuntimeException("Bank not found"));
+
+        loan.setBank(bank);
+        loan.setStatus(LoanStatus.ASSIGNED_TO_BANK);
+        loan.setAdminRemark(null);
+        loan.setUpdatedDate(LocalDate.now());
+        loanRepo.save(loan);
+
+        return "Case " + caseNumber + " assigned to " + bank.getBankName()
+                + " (ASSIGNED_TO_BANK)";
+    }
+
+    @Override
+    @Transactional
+    public String rejectByAdmin(String caseNumber, String remark) {
+
+        LoanApplication loan = loanRepo.findByCaseNumber(caseNumber);
+
+        if (loan == null) {
+            throw new RuntimeException("Loan not found");
+        }
+
+        if (!ADMIN_PRE_BANK_STATUSES.contains(loan.getStatus())) {
+            throw new RuntimeException("Only pending / under-review cases can be rejected by admin");
+        }
+
+        String clean = remark == null ? "" : remark.trim();
+        if (clean.isEmpty()) {
+            throw new RuntimeException("Remark is required");
+        }
+
+        loan.setStatus(LoanStatus.REJECTED_BY_ADMIN);
+        loan.setAdminRemark(clean);
+        loan.setUpdatedDate(LocalDate.now());
+        loanRepo.save(loan);
+
+        if (loan.getUser() != null && loan.getUser().getEmail() != null) {
+            String subject = "Loan application update";
+            String body = "Dear Customer,\n\n"
+                    + "Your loan application could not proceed at this time.\n"
+                    + "Case Number: " + caseNumber + "\n"
+                    + "Remark: " + clean + "\n\n"
+                    + "Thank you.";
+            emailService.sendEmail(loan.getUser().getEmail(), subject, body);
+        }
+
+        return "Case " + caseNumber + " marked REJECTED_BY_ADMIN";
     }
 }

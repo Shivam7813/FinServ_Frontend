@@ -4,4 +4,4 @@ const raw = import.meta.env.VITE_API_BASE_URL;
 export const API_BASE_URL =
   raw != null && String(raw).trim() !== ""
     ? String(raw).replace(/\/$/, "")
-    : "http://localhost:8080";
+    : "http://localhost:8081";

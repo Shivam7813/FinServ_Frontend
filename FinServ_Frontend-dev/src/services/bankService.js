@@ -33,7 +33,7 @@ function parseTenure(tStr) {
 }
 
 export async function getBanks() {
-  const { data } = await API.get("/banks");
+  const { data } = await API.get("/banks/getAll");
   return (Array.isArray(data) ? data : []).map(mapBank);
 }
 

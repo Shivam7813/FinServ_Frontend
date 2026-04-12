@@ -185,4 +185,41 @@ public class LoanController {
                 loanService.submitToBank(request.getCaseNumber())
         );
     }
+
+    /**
+     * Admin: eligible — assign bank → ASSIGNED_TO_BANK.
+     * POST path matches other loan actions (/create, /search) and avoids nested /admin/… routing issues.
+     */
+    @PostMapping("/assign-to-bank")
+    public ResponseEntity<String> assignToBankByAdmin(@Valid @RequestBody AdminAssignBankDTO request) {
+        return ResponseEntity.ok(
+                loanService.assignBankByAdmin(
+                        request.getCaseNumber().trim(),
+                        request.getBankId())
+        );
+    }
+
+    /** @deprecated Use POST /api/loans/assign-to-bank */
+    @PutMapping("/admin/assign-bank")
+    public ResponseEntity<String> adminAssignBank(@Valid @RequestBody AdminAssignBankDTO request) {
+        return assignToBankByAdmin(request);
+    }
+
+    /**
+     * Admin: not eligible — reject with remark → REJECTED_BY_ADMIN.
+     */
+    @PostMapping("/reject-by-admin")
+    public ResponseEntity<String> rejectByAdminPost(@Valid @RequestBody AdminRejectDTO request) {
+        return ResponseEntity.ok(
+                loanService.rejectByAdmin(
+                        request.getCaseNumber().trim(),
+                        request.getRemark())
+        );
+    }
+
+    /** @deprecated Use POST /api/loans/reject-by-admin */
+    @PutMapping("/admin/reject")
+    public ResponseEntity<String> adminReject(@Valid @RequestBody AdminRejectDTO request) {
+        return rejectByAdminPost(request);
+    }
 }

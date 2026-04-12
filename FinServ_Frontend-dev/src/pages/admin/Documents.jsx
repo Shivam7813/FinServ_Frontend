@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
 import { fetchAdminDocumentDashboard } from "../../services/documentService";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Documents() {
+  const [searchParams] = useSearchParams();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
 
   useEffect(() => {
     const load = async () => {
@@ -21,6 +24,11 @@ export default function Documents() {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q != null) setSearch(q);
+  }, [searchParams]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
@@ -43,8 +51,7 @@ export default function Documents() {
 
   // ✅ View handler
   const handleView = (docId) => {
-    // Adjust URL as per your backend
-    const url = `http://localhost:8080/api/documents/preview/${docId}`;
+    const url = `${API_BASE_URL}/api/documents/preview/${docId}`;
     window.open(url, "_blank");
   };
 

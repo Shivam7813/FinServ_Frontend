@@ -54,7 +54,8 @@ export default function Applications() {
       return (
         matchesSearch &&
         (app.status === "UNDER_REVIEW" ||
-          app.status === "SUBMITTED_TO_BANK")
+          app.status === "SUBMITTED_TO_BANK" ||
+          app.status === "ASSIGNED_TO_BANK")
       );
     }
 
@@ -77,7 +78,9 @@ export default function Applications() {
   };
 
   const formatStatus = (status) => {
-    if (status === "SUBMITTED_TO_BANK") return "UNDER REVIEW";
+    if (status === "SUBMITTED_TO_BANK" || status === "ASSIGNED_TO_BANK") {
+      return "UNDER REVIEW";
+    }
     return status?.replaceAll("_", " ");
   };
 

@@ -22,11 +22,14 @@ export const getUserStats = async () => {
       (a) =>
         a.status === "UNDER_REVIEW" ||
         a.status === "SUBMITTED_TO_BANK" ||
+        a.status === "ASSIGNED_TO_BANK" ||
         a.status === "DOCUMENTS_PENDING" ||
         a.status === "PENDING"
     ).length,
     approved: apps.filter((a) => a.status === "APPROVED").length,
-    rejected: apps.filter((a) => a.status === "REJECTED").length,
+    rejected: apps.filter(
+      (a) => a.status === "REJECTED" || a.status === "REJECTED_BY_ADMIN"
+    ).length,
   };
 };
 

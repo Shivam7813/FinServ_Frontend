@@ -88,7 +88,9 @@ export default function Review() {
   };
 
   const formatStatus = (status) => {
-    if (status === "SUBMITTED_TO_BANK") return "UNDER REVIEW";
+    if (status === "SUBMITTED_TO_BANK" || status === "ASSIGNED_TO_BANK") {
+      return "UNDER REVIEW";
+    }
     return status?.replaceAll("_", " ");
   };
 

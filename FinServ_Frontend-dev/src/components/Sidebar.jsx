@@ -39,7 +39,7 @@ export default function Sidebar() {
   const menuConfig = {
     admin: [
       { icon: <LayoutDashboard size={20} />, text: "Dashboard", to: "/admin/dashboard" },
-      { icon: <FileText size={20} />, text: "Loan Cases", to: "/admin/loan-cases" },
+      { icon: <FileText size={20} />, text: "Applications", to: "/admin/loan-cases" },
       { icon: <Users size={20} />, text: "Customers", to: "/admin/customers" },
       { icon: <Folder size={20} />, text: "Documents", to: "/admin/documents" },
       { icon: <Landmark size={20} />, text: "Banks", to: "/admin/banks" },
