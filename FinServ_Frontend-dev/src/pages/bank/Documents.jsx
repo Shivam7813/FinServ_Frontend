@@ -1,33 +1,71 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 import { fetchAdminDocumentDashboard } from "../../services/documentService";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Documents() {
+  const { user } = useAuth();
+
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  // ✅ normalize helper
+  const normalize = (str) =>
+    (str || "").toLowerCase().replace(/\s+/g, "").trim();
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
         const data = await fetchAdminDocumentDashboard();
-        setRows(data);
+
+        console.log("DOCUMENT DATA:", data);
+        console.log("USER:", user);
+
+        // ✅ BANK NAME
+        const userBank = normalize(
+          user?.bankName || user?.name || user?.email?.split("@")[0]
+        );
+
+        // ✅ FILTER BY BANK + ROLE
+        const filtered = data.filter((app) => {
+
+          const appBank = normalize(app.bank);
+
+          const isSameBank =
+            appBank.includes(userBank) || userBank.includes(appBank);
+
+          // ✅ ROLE LOGIC
+          if (user?.role === "ADMIN") return true;
+
+          if (user?.role === "BANK") return isSameBank;
+
+          return false;
+        });
+
+        setRows(filtered);
+
       } catch (e) {
         console.error(e);
       } finally {
         setLoading(false);
       }
     };
+
     load();
   }, []);
 
+  // ✅ SEARCH FILTER
   const filtered = useMemo(() => {
     if (!search.trim()) return rows;
+
     const q = search.toLowerCase();
-    return rows.filter(
-      (r) =>
-        `${r.caseNumber} ${r.customerName}`.toLowerCase().includes(q)
+
+    return rows.filter((r) =>
+      `${r.caseNumber} ${r.customerName}`
+        .toLowerCase()
+        .includes(q)
     );
   }, [rows, search]);
 
@@ -41,9 +79,8 @@ export default function Documents() {
     NEEDS_CORRECTION: "bg-orange-100 text-orange-600",
   };
 
-  // ✅ View handler
+  // ✅ VIEW DOCUMENT
   const handleView = (docId) => {
-    // Adjust URL as per your backend
     const url = `http://localhost:8080/api/documents/preview/${docId}`;
     window.open(url, "_blank");
   };
@@ -51,11 +88,16 @@ export default function Documents() {
   return (
     <AdminLayout>
       <div className="p-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Documents</h1>
+
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Documents
+        </h1>
+
         <p className="text-gray-500 mt-1">
-          Documents grouped by loan case (from the server).
+          Documents filtered by bank & role
         </p>
 
+        {/* SEARCH */}
         <div className="flex justify-between items-center mt-6 flex-wrap gap-3">
           <input
             type="text"
@@ -66,23 +108,33 @@ export default function Documents() {
           />
         </div>
 
-        {loading ? (
+        {loading && (
           <p className="text-gray-500 mt-6">Loading documents…</p>
-        ) : null}
+        )}
 
+        {/* LIST */}
         <div className="mt-6 space-y-6">
           {filtered.map((app) => (
-            <div key={app.caseNumber} className="bg-white p-5 rounded-2xl shadow">
+            <div
+              key={app.caseNumber}
+              className="bg-white p-5 rounded-2xl shadow"
+            >
               <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <div>
-                  <h3 className="text-blue-600 font-semibold">{app.caseNumber}</h3>
-                  <p className="text-sm text-gray-500">{app.customerName}</p>
+                  <h3 className="text-blue-600 font-semibold">
+                    {app.caseNumber}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {app.customerName}
+                  </p>
                 </div>
 
                 <div className="text-xs text-gray-500 text-right">
                   <p>
-                    {app.documents.length} files · Verified {app.verifiedCount} ·
-                    Pending {app.pendingCount} · Rejected {app.rejectedCount}
+                    {app.documents.length} files · Verified{" "}
+                    {app.verifiedCount} · Pending{" "}
+                    {app.pendingCount} · Rejected{" "}
+                    {app.rejectedCount}
                   </p>
                 </div>
               </div>
@@ -116,7 +168,6 @@ export default function Documents() {
                         {String(doc.status || "").replaceAll("_", " ")}
                       </span>
 
-                      {/* ✅ VIEW BUTTON ADDED */}
                       <button
                         onClick={() => handleView(doc.id)}
                         className="mt-3 w-full bg-blue-500 hover:bg-blue-600 text-white text-xs py-1.5 rounded-lg"
@@ -126,16 +177,20 @@ export default function Documents() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-400 text-sm">No documents uploaded</p>
+                  <p className="text-gray-400 text-sm">
+                    No documents uploaded
+                  </p>
                 )}
               </div>
             </div>
           ))}
         </div>
 
-        {!loading && filtered.length === 0 ? (
-          <p className="text-center text-gray-400 mt-6">No cases found</p>
-        ) : null}
+        {!loading && filtered.length === 0 && (
+          <p className="text-center text-gray-400 mt-6">
+            No cases found
+          </p>
+        )}
       </div>
     </AdminLayout>
   );

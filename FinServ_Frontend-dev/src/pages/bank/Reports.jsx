@@ -1,145 +1,178 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useEffect, useState } from "react";
-import axios from "axios"; // ✅ ADDED
+import axios from "axios";
 import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Reports() {
   const [applications, setApplications] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    approved: 0,
+    rejected: 0,
+    pending: 0,
+  });
 
-  // ✅ FETCH DATA FROM BACKEND (NO SERVICE)
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(
-          `${API_BASE_URL}/api/loans/dashboard`
-        );
+  const [loading, setLoading] = useState(true);
 
-        setApplications(res.data || []);
-      } catch (err) {
-        console.error("Error fetching applications:", err);
+  // ✅ SAME AS DASHBOARD API
+  const fetchData = async () => {
+    setLoading(true);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/dashboard`);
+      const data = response.data;
+
+      console.log("REPORT DASHBOARD DATA:", data);
+
+      let apps = [];
+
+      // ✅ HANDLE ARRAY RESPONSE
+      if (Array.isArray(data)) {
+        apps = data;
+      } else {
+        // ✅ HANDLE OBJECT RESPONSE
+        apps =
+          data.recentLoans ||
+          data.loans ||
+          data.data ||
+          [];
       }
-    };
 
+      setApplications(apps);
+
+      // ✅ CALCULATE SAME AS DASHBOARD
+      const total = apps.length;
+
+      const approved = apps.filter(
+        (a) => a.status === "APPROVED"
+      ).length;
+
+      const rejected = apps.filter(
+        (a) => a.status === "REJECTED"
+      ).length;
+
+      const pending = apps.filter(
+        (a) =>
+          a.status === "UNDER_REVIEW" ||
+          a.status === "PENDING" ||
+          a.status === "DOCUMENTS_PENDING" ||
+          a.status === "SUBMITTED_TO_BANK" ||
+          a.status === "ASSIGNED_TO_BANK"
+      ).length;
+
+      setStats({ total, approved, rejected, pending });
+
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
-  // 🔹 Stats Calculation
-  const total = applications.length;
-
-  const approved = applications.filter(
-    (app) => app.status?.toUpperCase() === "APPROVED"
-  ).length;
-
-  const rejected = applications.filter((app) => {
-    const s = app.status?.toUpperCase();
-    return s === "REJECTED" || s === "REJECTED_BY_ADMIN";
-  }).length;
-
-  // ✅ FIXED STATUS HANDLING (IMPORTANT)
-  const pending = applications.filter((app) => {
-    const status = app.status?.toUpperCase();
-
-    return (
-      status === "PENDING" ||
-      status === "UNDER_REVIEW" ||
-      status === "SUBMITTED_TO_BANK" ||
-      status === "ASSIGNED_TO_BANK" ||
-      status === "DOCUMENTS_PENDING"
-    );
-  }).length;
-
-  const stats = { total, approved, rejected, pending };
-
   const getPercentage = (value) => {
-    return total === 0 ? 0 : ((value / total) * 100).toFixed(1);
+    return stats.total === 0
+      ? 0
+      : ((value / stats.total) * 100).toFixed(1);
   };
 
   return (
     <AdminLayout>
       <div className="p-4">
 
-        {/* HEADER */}
         <h2 className="text-2xl font-semibold mb-6">
           Reports & Analytics
         </h2>
 
-        {/* STATS CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-
-          {/* Total */}
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl shadow">
-            <p className="text-sm opacity-80">Total Applications</p>
-            <h3 className="text-2xl font-semibold">{stats.total}</h3>
+        {loading ? (
+          <div className="text-center py-10 text-gray-500">
+            Loading reports...
           </div>
+        ) : (
+          <>
+            {/* STATS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
-          {/* Approved */}
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-xl shadow">
-            <p className="text-sm opacity-80">Approved</p>
-            <h3 className="text-2xl font-semibold">
-              {stats.approved}
-            </h3>
-            <p className="text-xs opacity-80">
-              {getPercentage(stats.approved)}%
-            </p>
-          </div>
+              <StatCard
+                title="Total Applications"
+                value={stats.total}
+                color="from-blue-500 to-blue-600"
+              />
 
-          {/* Rejected */}
-          <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-4 rounded-xl shadow">
-            <p className="text-sm opacity-80">Rejected</p>
-            <h3 className="text-2xl font-semibold">
-              {stats.rejected}
-            </h3>
-            <p className="text-xs opacity-80">
-              {getPercentage(stats.rejected)}%
-            </p>
-          </div>
+              <StatCard
+                title="Approved"
+                value={stats.approved}
+                percentage={getPercentage(stats.approved)}
+                color="from-green-500 to-green-600"
+              />
 
-          {/* Pending */}
-          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white p-4 rounded-xl shadow">
-            <p className="text-sm opacity-80">Pending</p>
-            <h3 className="text-2xl font-semibold">
-              {stats.pending}
-            </h3>
-            <p className="text-xs opacity-80">
-              {getPercentage(stats.pending)}%
-            </p>
-          </div>
+              <StatCard
+                title="Rejected"
+                value={stats.rejected}
+                percentage={getPercentage(stats.rejected)}
+                color="from-red-500 to-red-600"
+              />
 
-        </div>
+              <StatCard
+                title="Pending"
+                value={stats.pending}
+                percentage={getPercentage(stats.pending)}
+                color="from-yellow-500 to-yellow-600"
+              />
 
-        {/* STATUS VISUALIZATION */}
-        <div className="bg-white shadow rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-6">
-            Application Status Overview
-          </h3>
+            </div>
 
-          <ProgressBar
-            label="Approved"
-            value={stats.approved}
-            percentage={getPercentage(stats.approved)}
-            color="bg-green-500"
-          />
+            {/* PROGRESS */}
+            <div className="bg-white shadow rounded-xl p-6">
+              <h3 className="text-lg font-semibold mb-6">
+                Application Status Overview
+              </h3>
 
-          <ProgressBar
-            label="Rejected"
-            value={stats.rejected}
-            percentage={getPercentage(stats.rejected)}
-            color="bg-red-500"
-          />
+              <ProgressBar
+                label="Approved"
+                value={stats.approved}
+                percentage={getPercentage(stats.approved)}
+                color="bg-green-500"
+              />
 
-          <ProgressBar
-            label="Pending"
-            value={stats.pending}
-            percentage={getPercentage(stats.pending)}
-            color="bg-yellow-500"
-          />
-        </div>
+              <ProgressBar
+                label="Rejected"
+                value={stats.rejected}
+                percentage={getPercentage(stats.rejected)}
+                color="bg-red-500"
+              />
+
+              <ProgressBar
+                label="Pending"
+                value={stats.pending}
+                percentage={getPercentage(stats.pending)}
+                color="bg-yellow-500"
+              />
+            </div>
+          </>
+        )}
       </div>
     </AdminLayout>
   );
 }
 
-/* 🔥 Progress Bar */
+/* STAT CARD */
+function StatCard({ title, value, percentage, color }) {
+  return (
+    <div className={`bg-gradient-to-r ${color} text-white p-4 rounded-xl shadow`}>
+      <p className="text-sm opacity-80">{title}</p>
+      <h3 className="text-2xl font-semibold">{value}</h3>
+      {percentage && (
+        <p className="text-xs opacity-80">{percentage}%</p>
+      )}
+    </div>
+  );
+}
+
+/* PROGRESS BAR */
 function ProgressBar({ label, value, percentage, color }) {
   return (
     <div className="mb-5">

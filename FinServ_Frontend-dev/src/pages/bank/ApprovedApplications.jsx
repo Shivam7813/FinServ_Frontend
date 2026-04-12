@@ -1,15 +1,21 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiBase";
+
+import { getLoans } from "../../services/loanService";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ApprovedApplications() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [search, setSearch] = useState("");
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ normalize helper
+  const normalize = (str) =>
+    (str || "").toLowerCase().replace(/\s+/g, "").trim();
 
   // ✅ FETCH DATA
   useEffect(() => {
@@ -17,11 +23,23 @@ export default function ApprovedApplications() {
       try {
         setLoading(true);
 
-        const response = await axios.get(
-          `${API_BASE_URL}/api/loans/dashboard`
+        const data = await getLoans();
+
+        const bankName = normalize(
+          user?.bankName || user?.name || user?.email?.split("@")[0]
         );
 
-        setApplications(response.data || []);
+        const filtered = data.filter((loan) => {
+          const loanBank = normalize(loan.bank);
+
+          return (
+            loanBank.includes(bankName) ||
+            bankName.includes(loanBank)
+          );
+        });
+
+        setApplications(filtered);
+
       } catch (error) {
         console.error("Error fetching approved applications:", error);
       } finally {
@@ -32,29 +50,39 @@ export default function ApprovedApplications() {
     fetchData();
   }, []);
 
-  // ✅ FILTER (SEARCH + APPROVED)
+  // ✅ FILTER ONLY APPROVED + SEARCH
   const filteredApps = useMemo(() => {
     return applications.filter((app) => {
-      const name = app?.customerName || "";
-      const caseNumber = app?.caseNumber || "";
+
+      const haystack =
+        `${app.fullName} ${app.caseNumber} ${app.mobile} ${app.loanType} ${app.bank} ${app.loanAmount}`.toLowerCase();
 
       const matchesSearch =
-        name.toLowerCase().includes(search.toLowerCase()) ||
-        caseNumber.toLowerCase().includes(search.toLowerCase());
+        !search.trim() || haystack.includes(search.toLowerCase());
 
       return matchesSearch && app?.status === "APPROVED";
     });
   }, [applications, search]);
 
+  // ✅ STATUS STYLE SAME AS APPLICATIONS
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "APPROVED":
+        return "bg-green-100 text-green-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
   return (
     <AdminLayout>
-      <div className="p-4">
+      <div className="p-6">
 
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-          <h2 className="text-2xl font-semibold text-green-600">
+        <div className="flex justify-between items-center flex-wrap gap-3">
+          <h1 className="text-2xl font-semibold text-gray-800">
             Approved Applications
-          </h2>
+          </h1>
 
           <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
             {filteredApps.length} Total
@@ -62,73 +90,103 @@ export default function ApprovedApplications() {
         </div>
 
         {/* SEARCH */}
-        <div className="mb-5">
+        <div className="mt-6">
           <input
-            type="text"
-            placeholder="Search by applicant or case..."
-            className="border px-3 py-2 rounded-lg w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-green-400"
+            type="search"
+            placeholder="Search by case number, customer, bank…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="px-4 py-2 border rounded-lg text-sm w-full max-w-xs focus:ring-2 focus:ring-green-500"
           />
         </div>
 
-        {/* LIST */}
-        <div className="grid gap-4">
+        {/* TABLE */}
+        <div className="bg-white rounded-2xl shadow mt-6 p-4">
 
-          {/* 🔄 LOADING */}
+          <h2 className="text-lg font-semibold mb-4">
+            Approved Cases
+          </h2>
+
           {loading ? (
-            <div className="text-center text-gray-500 py-10">
+            <p className="text-gray-500 text-center py-6">
               Loading applications...
-            </div>
+            </p>
           ) : filteredApps.length === 0 ? (
-            <div className="text-center text-gray-500 py-10 bg-white rounded-xl shadow">
+            <p className="text-gray-500 text-center py-6">
               No approved applications found
-            </div>
+            </p>
           ) : (
-            filteredApps.map((app) => {
-              const name = app?.customerName || "N/A";
-              const loanType = app?.loanType || "N/A";
-              const amount = app?.loanAmount || 0;
-              const caseNumber = app?.caseNumber || app?.id;
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
 
-              return (
-                <div
-                  key={caseNumber}
-                  className="bg-white shadow rounded-xl p-4 flex justify-between items-center hover:shadow-md transition border-l-4 border-green-500"
-                >
-                  {/* LEFT */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 text-green-600 flex items-center justify-center rounded-full font-semibold">
-                      {name.charAt(0).toUpperCase()}
-                    </div>
+                {/* HEADER */}
+                <thead>
+                  <tr className="text-gray-500 border-b text-left">
+                    <th className="py-3">Case</th>
+                    <th>Customer</th>
+                    <th>Vehicle</th>
+                    <th>Amount</th>
+                    <th>Bank</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
 
-                    <div>
-                      <h3 className="font-semibold text-gray-800">
-                        {name}
-                      </h3>
+                {/* BODY */}
+                <tbody className="text-gray-700">
+                  {filteredApps.map((app) => {
 
-                      <p className="text-sm text-gray-500">
-                        {loanType} • ₹{Number(amount).toLocaleString()}
-                      </p>
+                    const name = app?.fullName || "N/A";
+                    const loanType = app?.loanType || "—";
+                    const amount = app?.loanAmount || 0;
+                    const caseNumber = app?.caseNumber || "—";
+                    const bank = app?.bank || "—";
 
-                      <span className="inline-block mt-2 px-3 py-1 text-xs rounded-full bg-green-100 text-green-700">
-                        APPROVED
-                      </span>
-                    </div>
-                  </div>
+                    return (
+                      <tr
+                        key={caseNumber}
+                        className="border-b hover:bg-gray-50 transition"
+                      >
+                        <td className="py-3 text-green-600 font-medium cursor-pointer">
+                          {caseNumber}
+                        </td>
 
-                  {/* ACTION */}
-                  <button
-                    onClick={() =>
-                      navigate(`/bank/review/${caseNumber}`)
-                    }
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-                  >
-                    Review →
-                  </button>
-                </div>
-              );
-            })
+                        <td>{name}</td>
+
+                        <td>{loanType}</td>
+
+                        <td>₹{Number(amount).toLocaleString()}</td>
+
+                        <td>{bank}</td>
+
+                        <td>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
+                              "APPROVED"
+                            )}`}
+                          >
+                            APPROVED
+                          </span>
+                        </td>
+
+                        <td>
+                          <button
+                            onClick={() =>
+                              navigate(`/bank/review/${caseNumber}`)
+                            }
+                            className="px-3 py-1 rounded border border-green-200 text-green-700 hover:bg-green-50"
+                          >
+                            View
+                          </button>
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+                </tbody>
+
+              </table>
+            </div>
           )}
         </div>
       </div>

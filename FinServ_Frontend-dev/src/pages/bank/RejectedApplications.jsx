@@ -1,7 +1,8 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 
 export default function RejectedApplications() {
   const navigate = useNavigate();
@@ -10,15 +11,27 @@ export default function RejectedApplications() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ FETCH ALL DATA
+  // ✅ FETCH FROM DASHBOARD
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:8080/api/loans/dashboard"
-        );
+        const res = await axios.get(`${API_BASE_URL}/api/dashboard`);
+        const data = res.data;
 
-        setApplications(response.data || []);
+        let apps = [];
+
+        if (Array.isArray(data)) {
+          apps = data;
+        } else {
+          apps =
+            data.recentLoans ||
+            data.loans ||
+            data.data ||
+            [];
+        }
+
+        setApplications(apps);
+
       } catch (error) {
         console.error("Error fetching rejected applications:", error);
       } finally {
@@ -29,26 +42,38 @@ export default function RejectedApplications() {
     fetchData();
   }, []);
 
-  // 🔥 FILTER ONLY REJECTED
-  const filteredApps = applications.filter((app) => {
-    const name = app?.customerName || "";
+  // ✅ FILTER REJECTED + SEARCH
+  const filteredApps = useMemo(() => {
+    return applications.filter((app) => {
 
-    const matchesSearch = name
-      .toLowerCase()
-      .includes(search.toLowerCase());
+      const haystack =
+        `${app.fullName} ${app.customerName} ${app.caseNumber} ${app.loanType} ${app.loanAmount}`.toLowerCase();
 
-    return matchesSearch && app?.status === "REJECTED";
-  });
+      const matchesSearch =
+        !search.trim() || haystack.includes(search.toLowerCase());
+
+      const status = app?.status?.toUpperCase();
+
+      return (
+        matchesSearch &&
+        (status === "REJECTED" || status === "REJECTED_BY_ADMIN")
+      );
+    });
+  }, [applications, search]);
+
+  // ✅ STATUS STYLE
+  const getStatusStyle = () =>
+    "bg-red-100 text-red-700";
 
   return (
     <AdminLayout>
-      <div className="p-4">
+      <div className="p-6">
 
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold text-red-600">
+        <div className="flex justify-between items-center flex-wrap gap-3">
+          <h1 className="text-2xl font-semibold text-gray-800">
             Rejected Applications
-          </h2>
+          </h1>
 
           <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
             {filteredApps.length} Total
@@ -56,73 +81,101 @@ export default function RejectedApplications() {
         </div>
 
         {/* SEARCH */}
-        <div className="mb-5">
+        <div className="mt-6">
           <input
-            type="text"
-            placeholder="Search applicant..."
-            className="border px-3 py-2 rounded-lg w-full md:w-1/3 focus:outline-none focus:ring-2 focus:ring-red-400"
+            type="search"
+            placeholder="Search by case number, customer, loan…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="px-4 py-2 border rounded-lg text-sm w-full max-w-xs focus:ring-2 focus:ring-red-500"
           />
         </div>
 
-        {/* LIST */}
-        <div className="grid gap-4">
+        {/* TABLE */}
+        <div className="bg-white rounded-2xl shadow mt-6 p-4">
 
-          {/* 🔄 LOADING */}
+          <h2 className="text-lg font-semibold mb-4">
+            Rejected Cases
+          </h2>
+
           {loading ? (
-            <div className="text-center text-gray-500 py-10">
+            <p className="text-gray-500 text-center py-6">
               Loading applications...
-            </div>
+            </p>
           ) : filteredApps.length === 0 ? (
-            <div className="text-center text-gray-500 py-10 bg-white rounded-xl shadow">
+            <p className="text-gray-500 text-center py-6">
               No rejected applications found
-            </div>
+            </p>
           ) : (
-            filteredApps.map((app) => {
-              const name = app?.customerName || "N/A";
-              const loanType = app?.loanType || "N/A";
-              const amount = app?.loanAmount || 0;
-              const caseNumber = app?.caseNumber;
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
 
-              return (
-                <div
-                  key={caseNumber}
-                  className="bg-white shadow rounded-xl p-4 flex justify-between items-center hover:shadow-md transition border-l-4 border-red-500"
-                >
-                  {/* LEFT */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-red-100 text-red-600 flex items-center justify-center rounded-full font-semibold">
-                      {name.charAt(0)}
-                    </div>
+                {/* HEADER */}
+                <thead>
+                  <tr className="text-gray-500 border-b text-left">
+                    <th className="py-3">Case</th>
+                    <th>Customer</th>
+                    <th>Loan Type</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
 
-                    <div>
-                      <h3 className="font-semibold text-gray-800">
-                        {name}
-                      </h3>
+                {/* BODY */}
+                <tbody className="text-gray-700">
+                  {filteredApps.map((app) => {
 
-                      <p className="text-sm text-gray-500">
-                        {loanType} • ₹{amount}
-                      </p>
+                    const name =
+                      app?.fullName ||
+                      app?.customerName ||
+                      "N/A";
 
-                      <span className="inline-block mt-2 px-3 py-1 text-xs rounded-full bg-red-100 text-red-700">
-                        REJECTED
-                      </span>
-                    </div>
-                  </div>
+                    const loanType = app?.loanType || "—";
+                    const amount = app?.loanAmount || 0;
+                    const caseNumber = app?.caseNumber || "—";
 
-                  {/* ✅ REVIEW BUTTON (FIXED) */}
-                  <button
-                    onClick={() =>
-                      navigate(`/bank/review/${caseNumber}`)
-                    }
-                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
-                  >
-                    Review →
-                  </button>
-                </div>
-              );
-            })
+                    return (
+                      <tr
+                        key={caseNumber}
+                        className="border-b hover:bg-gray-50 transition"
+                      >
+                        <td className="py-3 text-red-600 font-medium cursor-pointer">
+                          {caseNumber}
+                        </td>
+
+                        <td>{name}</td>
+
+                        <td>{loanType}</td>
+
+                        <td>₹{Number(amount).toLocaleString()}</td>
+
+                        <td>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle()}`}
+                          >
+                            REJECTED
+                          </span>
+                        </td>
+
+                        <td>
+                          <button
+                            onClick={() =>
+                              navigate(`/bank/review/${caseNumber}`)
+                            }
+                            className="px-3 py-1 rounded border border-red-200 text-red-700 hover:bg-red-50"
+                          >
+                            View
+                          </button>
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+                </tbody>
+
+              </table>
+            </div>
           )}
         </div>
       </div>
