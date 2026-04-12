@@ -6,8 +6,9 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiBase";
+
+// ✅ USE SERVICE
+import { getLoans } from "../../services/loanService";
 
 export default function Applications() {
   const { user } = useAuth();
@@ -20,17 +21,20 @@ export default function Applications() {
 
   const isUnderReviewPage = location.pathname.includes("under-review");
 
+  // ✅ normalize helper
+  const normalize = (str) =>
+    (str || "").toLowerCase().replace(/\s+/g, "").trim();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/loans/dashboard`
-        );
+        // ✅ USE SAME API AS ADMIN
+        const data = await getLoans();
 
-        console.log("API DATA:", response.data); // 🔥 DEBUG
-        console.log("USER:", user); // 🔥 DEBUG
+        console.log("API DATA:", data);
+        console.log("USER:", user);
 
-        setApplications(response.data || []);
+        setApplications(data || []);
       } catch (error) {
         console.error("Error fetching applications:", error);
       }
@@ -50,27 +54,29 @@ export default function Applications() {
 
   const filteredApps = applications.filter((app) => {
 
-  const bankName = (app.bank || "").toLowerCase();
-  const userBank = (user?.bankName || "").toLowerCase();
+    const loanBank = normalize(app.bank);
+    const userBank = normalize(
+      user?.bankName || user?.name || user?.email?.split("@")[0]
+    );
 
-  // 🔥 TEMP FIX → allow all if bank empty
-  const isSameBank =
-    !bankName || bankName.includes(userBank);
+    // ✅ STRONG MATCHING
+    const isSameBank =
+      loanBank.includes(userBank) || userBank.includes(loanBank);
 
-  // 🔥 TEMP FIX → allow more statuses
-  const isValidStatus =
-    app.status === "ASSIGNED_TO_BANK" ||
-    app.status === "APPROVED" ||
-    app.status === "SUBMITTED_TO_BANK"; // 👈 ADD THIS
+    // ✅ VALID STATUSES
+    const isValidStatus =
+      app.status === "ASSIGNED_TO_BANK" ||
+      app.status === "APPROVED" ||
+      app.status === "SUBMITTED_TO_BANK";
 
-  const haystack =
-    `${app.customerName} ${app.caseNumber} ${app.mobile} ${app.vehicle} ${app.bank} ${app.loanAmount}`.toLowerCase();
+    const haystack =
+      `${app.fullName} ${app.caseNumber} ${app.mobile} ${app.loanType} ${app.bank} ${app.loanAmount}`.toLowerCase();
 
-  const matchesSearch =
-    !search.trim() || haystack.includes(search.toLowerCase());
+    const matchesSearch =
+      !search.trim() || haystack.includes(search.toLowerCase());
 
-  return isSameBank && isValidStatus && matchesSearch;
-});
+    return isSameBank && isValidStatus && matchesSearch;
+  });
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -94,106 +100,126 @@ export default function Applications() {
     return status?.replaceAll("_", " ");
   };
 
-  return (
-    <AdminLayout>
-      <div className="p-4">
+ return (
+  <AdminLayout>
+    <div className="p-6">
 
-        <h2 className="text-2xl font-semibold mb-4">
-          {isUnderReviewPage
-            ? "Under Review Applications"
-            : "Loan Applications"}
-        </h2>
+      {/* HEADER */}
+      <h1 className="text-2xl font-semibold text-gray-800">
+        {isUnderReviewPage
+          ? "Under Review Applications"
+          : "Loan Applications"}
+      </h1>
 
-        {/* SEARCH */}
-        <div className="mb-5">
-          <input
-            type="search"
-            placeholder="Search by name, case number, mobile, vehicle, bank…"
-            className="border px-3 py-2 rounded-lg w-full md:w-1/3"
-            value={search}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {/* LIST */}
-        <div className="grid gap-4">
-
-          {filteredApps.length === 0 ? (
-            <div className="text-center text-gray-500 py-10">
-              No applications found
-            </div>
-          ) : (
-            filteredApps.map((app) => {
-
-              const name = app?.customerName || "N/A";
-              const loanType = app?.loanType || "N/A";
-              const amount = app?.loanAmount || 0;
-              const status = app?.status || "PENDING";
-              const caseNumber = app?.caseNumber || "—";
-              const mobile = app?.mobile || "—";
-              const vehicle = app?.vehicle || "—";
-              const bank = app?.bank || "—";
-              const date = app?.createdAt || app?.submittedAt || "—";
-
-              return (
-                <div
-                  key={caseNumber}
-                  className="bg-white shadow rounded-xl p-5 flex justify-between items-center hover:shadow-md transition"
-                >
-                  {/* LEFT */}
-                  <div className="flex items-start gap-4">
-
-                    <div className="w-12 h-12 bg-blue-100 text-blue-600 flex items-center justify-center rounded-full font-semibold text-lg">
-                      {name.charAt(0)}
-                    </div>
-
-                    <div className="space-y-1">
-
-                      <h3 className="font-semibold text-lg text-gray-800">
-                        {name}
-                      </h3>
-
-                      <p className="text-sm text-gray-500">
-                        Case: <span className="font-medium">{caseNumber}</span>
-                      </p>
-
-                      <p className="text-sm text-gray-500">
-                        {loanType} • ₹{amount}
-                      </p>
-
-                      <p className="text-xs text-gray-400">
-                        📱 {mobile} | 🚗 {vehicle}
-                      </p>
-
-                      <p className="text-xs text-gray-400">
-                        🏦 {bank} | 📅 {date}
-                      </p>
-
-                      <span
-                        className={`inline-block mt-2 px-3 py-1 text-xs rounded-full ${getStatusStyle(
-                          status
-                        )}`}
-                      >
-                        {formatStatus(status)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* RIGHT */}
-                  <button
-                    onClick={() =>
-                      navigate(`/bank/review/${caseNumber}`)
-                    }
-                    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
-                  >
-                    Review →
-                  </button>
-                </div>
-              );
-            })
-          )}
-        </div>
+      {/* SEARCH */}
+      <div className="flex justify-between items-center mt-6 flex-wrap gap-3">
+        <input
+          type="search"
+          placeholder="Search by case number, customer, bank, mobile…"
+          value={search}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="px-4 py-2 border rounded-lg text-sm w-full max-w-xs focus:ring-2 focus:ring-blue-500"
+        />
       </div>
-    </AdminLayout>
-  );
+
+      {/* TABLE */}
+      <div className="bg-white rounded-2xl shadow mt-6 p-4">
+
+        <h2 className="text-lg font-semibold mb-4">All cases</h2>
+
+        {filteredApps.length === 0 ? (
+          <p className="text-gray-500 text-center py-6">
+            No applications found
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+
+              {/* HEADER */}
+              <thead>
+                <tr className="text-gray-500 border-b text-left">
+                  <th className="py-3">Case</th>
+                  <th>Customer</th>
+                  <th>Vehicle</th>
+                  <th>Amount</th>
+                  <th>Bank</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+
+              {/* BODY */}
+              <tbody className="text-gray-700">
+                {filteredApps.map((app) => {
+
+                  const name = app?.fullName || "N/A";
+                  const loanType = app?.loanType || "—";
+                  const amount = app?.loanAmount || 0;
+                  const status = app?.status || "PENDING";
+                  const caseNumber = app?.caseNumber || "—";
+                  const bank = app?.bank || "—";
+
+                  return (
+                    <tr
+                      key={caseNumber}
+                      className="border-b hover:bg-gray-50 transition"
+                    >
+                      <td className="py-3 text-blue-600 font-medium cursor-pointer">
+                        {caseNumber}
+                      </td>
+
+                      <td>{name}</td>
+
+                      <td>{loanType}</td>
+
+                      <td>₹{Number(amount).toLocaleString()}</td>
+
+                      <td>{bank}</td>
+
+                      <td>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
+                            status
+                          )}`}
+                        >
+                          {formatStatus(status)}
+                        </span>
+                      </td>
+
+                      <td>
+                        <div className="flex gap-2 text-xs">
+
+                          <button
+                            onClick={() =>
+                              navigate(`/bank/review/${caseNumber}`)
+                            }
+                            className="px-3 py-1 rounded border border-blue-200 text-blue-700 hover:bg-blue-50"
+                          >
+                            Review
+                          </button>
+
+                          {status === "APPROVED" || status === "REJECTED" ? (
+                            <span className="text-gray-400">
+                              Closed
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">
+                              Awaiting bank
+                            </span>
+                          )}
+
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  </AdminLayout>
+);
 }

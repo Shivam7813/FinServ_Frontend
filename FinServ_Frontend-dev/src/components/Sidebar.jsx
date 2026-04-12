@@ -59,7 +59,7 @@ export default function Sidebar() {
       { icon: <XCircle size={20} />, text: "Rejected Applications", to: "/bank/rejected" },
 
       { icon: <Folder size={20} />, text: "Documents", to: "/bank/documents" },
-      { icon: <BarChart size={20} />, text: "Reports", to: "/bank/reports" },
+      // { icon: <BarChart size={20} />, text: "Reports", to: "/bank/reports" },
     ],
 
     user: [

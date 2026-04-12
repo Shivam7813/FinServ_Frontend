@@ -1,5 +1,18 @@
 package com.finserv.serviceImpl;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.finserv.dto.LoanDashboardDTO;
 import com.finserv.dto.LoanRequestDTO;
 import com.finserv.dto.LoanResponseDTO;
@@ -18,21 +31,17 @@ import com.finserv.repository.DocumentRepository;
 import com.finserv.repository.LoanApplicationRepository;
 import com.finserv.repository.UserRepository;
 import com.finserv.service.LoanService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.util.*;
 
 @Service
 public class LoanServiceImpl implements LoanService {
 
     private static final Set<LoanStatus> ADMIN_PRE_BANK_STATUSES = Collections.unmodifiableSet(EnumSet.of(
-            LoanStatus.PENDING,
-            LoanStatus.UNDER_REVIEW,
-            LoanStatus.DOCUMENTS_PENDING
-    ));
+        LoanStatus.PENDING,
+        LoanStatus.UNDER_REVIEW,
+        LoanStatus.DOCUMENTS_PENDING,
+        LoanStatus.SUBMITTED_TO_BANK,   
+        LoanStatus.ASSIGNED_TO_BANK     
+));
 
     @Autowired
     private LoanApplicationRepository loanRepo;
