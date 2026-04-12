@@ -9,6 +9,7 @@ function isUnderReviewStatus(s) {
   return (
     s === "UNDER_REVIEW" ||
     s === "SUBMITTED_TO_BANK" ||
+    s === "ASSIGNED_TO_BANK" ||
     s === "DOCUMENTS_PENDING" ||
     s === "PENDING"
   );
@@ -31,7 +32,9 @@ export const getUserStats = async () => {
 
   const approved = apps.filter((a) => a.status === "APPROVED").length;
 
-  const rejected = apps.filter((a) => a.status === "REJECTED").length;
+  const rejected = apps.filter(
+    (a) => a.status === "REJECTED" || a.status === "REJECTED_BY_ADMIN"
+  ).length;
 
   return {
     total,

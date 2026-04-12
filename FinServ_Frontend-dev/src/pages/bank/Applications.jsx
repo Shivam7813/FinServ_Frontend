@@ -1,4 +1,5 @@
 import AdminLayout from "../../layouts/AdminLayout";
+import { useAuth } from "../../context/AuthContext";
 import {
   useNavigate,
   useLocation,
@@ -9,6 +10,7 @@ import axios from "axios";
 import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Applications() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,10 +18,8 @@ export default function Applications() {
   const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [applications, setApplications] = useState([]);
 
-  // 🔥 Detect page type
   const isUnderReviewPage = location.pathname.includes("under-review");
 
-  // ✅ FETCH DATA FROM BACKEND
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -27,7 +27,8 @@ export default function Applications() {
           `${API_BASE_URL}/api/loans/dashboard`
         );
 
-        console.log("Applications API:", response.data);
+        console.log("API DATA:", response.data); // 🔥 DEBUG
+        console.log("USER:", user); // 🔥 DEBUG
 
         setApplications(response.data || []);
       } catch (error) {
@@ -47,30 +48,29 @@ export default function Applications() {
     setSearchParams(value.trim() ? { q: value } : {}, { replace: true });
   };
 
-  // 🔥 FILTER
   const filteredApps = applications.filter((app) => {
-    const name = app.customerName || "";
-    const caseNumber = app.caseNumber || "";
-    const mobile = app.mobile || "";
-    const vehicle = app.vehicle || "";
-    const bank = app.bank || "";
-    const amount = String(app.loanAmount ?? "");
 
-    const haystack =
-      `${name} ${caseNumber} ${mobile} ${vehicle} ${bank} ${amount}`.toLowerCase();
-    const matchesSearch =
-      !search.trim() || haystack.includes(search.toLowerCase());
+  const bankName = (app.bank || "").toLowerCase();
+  const userBank = (user?.bankName || "").toLowerCase();
 
-    if (isUnderReviewPage) {
-      return (
-        matchesSearch &&
-        (app.status === "UNDER_REVIEW" ||
-        app.status === "SUBMITTED_TO_BANK")
-      );
-    }
+  // 🔥 TEMP FIX → allow all if bank empty
+  const isSameBank =
+    !bankName || bankName.includes(userBank);
 
-    return matchesSearch;
-  });
+  // 🔥 TEMP FIX → allow more statuses
+  const isValidStatus =
+    app.status === "ASSIGNED_TO_BANK" ||
+    app.status === "APPROVED" ||
+    app.status === "SUBMITTED_TO_BANK"; // 👈 ADD THIS
+
+  const haystack =
+    `${app.customerName} ${app.caseNumber} ${app.mobile} ${app.vehicle} ${app.bank} ${app.loanAmount}`.toLowerCase();
+
+  const matchesSearch =
+    !search.trim() || haystack.includes(search.toLowerCase());
+
+  return isSameBank && isValidStatus && matchesSearch;
+});
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -88,17 +88,16 @@ export default function Applications() {
   };
 
   const formatStatus = (status) => {
-    if (status === "SUBMITTED_TO_BANK") {
+    if (status === "SUBMITTED_TO_BANK" || status === "ASSIGNED_TO_BANK") {
       return "UNDER REVIEW";
     }
     return status?.replaceAll("_", " ");
-    };
+  };
 
   return (
     <AdminLayout>
       <div className="p-4">
 
-        {/* HEADER */}
         <h2 className="text-2xl font-semibold mb-4">
           {isUnderReviewPage
             ? "Under Review Applications"
@@ -113,7 +112,6 @@ export default function Applications() {
             className="border px-3 py-2 rounded-lg w-full md:w-1/3"
             value={search}
             onChange={(e) => setSearchQuery(e.target.value)}
-            aria-label="Filter applications"
           />
         </div>
 
@@ -127,33 +125,48 @@ export default function Applications() {
           ) : (
             filteredApps.map((app) => {
 
-              // ✅ SAFE DATA HANDLING
               const name = app?.customerName || "N/A";
               const loanType = app?.loanType || "N/A";
               const amount = app?.loanAmount || 0;
               const status = app?.status || "PENDING";
-              const caseNumber = app?.caseNumber;
-
-              
+              const caseNumber = app?.caseNumber || "—";
+              const mobile = app?.mobile || "—";
+              const vehicle = app?.vehicle || "—";
+              const bank = app?.bank || "—";
+              const date = app?.createdAt || app?.submittedAt || "—";
 
               return (
                 <div
                   key={caseNumber}
-                  className="bg-white shadow rounded-xl p-4 flex justify-between items-center hover:shadow-md transition"
+                  className="bg-white shadow rounded-xl p-5 flex justify-between items-center hover:shadow-md transition"
                 >
                   {/* LEFT */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 text-blue-600 flex items-center justify-center rounded-full font-semibold">
+                  <div className="flex items-start gap-4">
+
+                    <div className="w-12 h-12 bg-blue-100 text-blue-600 flex items-center justify-center rounded-full font-semibold text-lg">
                       {name.charAt(0)}
                     </div>
 
-                    <div>
-                      <h3 className="font-semibold">
+                    <div className="space-y-1">
+
+                      <h3 className="font-semibold text-lg text-gray-800">
                         {name}
                       </h3>
 
                       <p className="text-sm text-gray-500">
+                        Case: <span className="font-medium">{caseNumber}</span>
+                      </p>
+
+                      <p className="text-sm text-gray-500">
                         {loanType} • ₹{amount}
+                      </p>
+
+                      <p className="text-xs text-gray-400">
+                        📱 {mobile} | 🚗 {vehicle}
+                      </p>
+
+                      <p className="text-xs text-gray-400">
+                        🏦 {bank} | 📅 {date}
                       </p>
 
                       <span
@@ -166,12 +179,12 @@ export default function Applications() {
                     </div>
                   </div>
 
-                  {/* REVIEW BUTTON */}
+                  {/* RIGHT */}
                   <button
                     onClick={() =>
                       navigate(`/bank/review/${caseNumber}`)
                     }
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
+                    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
                   >
                     Review →
                   </button>
@@ -181,6 +194,6 @@ export default function Applications() {
           )}
         </div>
       </div>
-      </AdminLayout>
+    </AdminLayout>
   );
 }

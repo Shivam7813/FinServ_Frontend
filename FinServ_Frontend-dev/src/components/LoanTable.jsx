@@ -6,10 +6,12 @@ export default function LoanTable({ data = [] }) {
   const statusStyles = {
     UNDER_REVIEW: "bg-yellow-100 text-yellow-600",
     SUBMITTED_TO_BANK: "bg-yellow-100 text-yellow-600",
+    ASSIGNED_TO_BANK: "bg-amber-100 text-amber-800",
     DOCUMENTS_PENDING: "bg-orange-100 text-orange-600",
     APPROVED: "bg-green-100 text-green-600",
     DISBURSED: "bg-emerald-100 text-emerald-700",
     REJECTED: "bg-red-100 text-red-600",
+    REJECTED_BY_ADMIN: "bg-rose-100 text-rose-700",
     PENDING: "bg-blue-100 text-blue-600",
   };
 

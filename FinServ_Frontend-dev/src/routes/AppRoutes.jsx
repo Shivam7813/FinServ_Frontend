@@ -1,15 +1,12 @@
-// src/routes/AppRoutes.jsx
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
-// ✅ Admin Create Loan
-import CreateLoanCase from "../pages/admin/CreateLoanCase";
-
+// 🔐 Auth
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 
-// 🔹 Admin Pages
+// ================= ADMIN =================
+import CreateLoanCase from "../pages/admin/CreateLoanCase";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import LoanCases from "../pages/admin/LoanCases";
 import Customers from "../pages/admin/Customers";
@@ -21,11 +18,17 @@ import Settings from "../pages/admin/Settings";
 // 🔹 Bank Pages
 import BankDashboard from "../pages/bank/BankDashboard";
 import Applications from "../pages/bank/Applications";
-import Review from "../pages/bank/Review";          // OLD
-import BankReview from "../pages/bank/BankReview";  // ✅ NEW
+import Review from "../pages/bank/Review";
+import BankReview from "../pages/bank/BankReview";
 import BankDocuments from "../pages/bank/Documents";
 import Offers from "../pages/bank/Offers";
 import BankReports from "../pages/bank/Reports";
+
+// 🔴 REJECTED PAGE
+import RejectedApplications from "../pages/bank/RejectedApplications";
+
+// 🟢 APPROVED PAGE (NEW)
+import ApprovedApplications from "../pages/bank/ApprovedApplications";
 
 // 🔹 User Pages
 import UserDashboard from "../pages/user/UserDashboard";
@@ -72,7 +75,27 @@ const AppRoutes = () => {
       {/* Under Review */}
       <Route path="/bank/under-review" element={<ProtectedRoute role="bank"><Applications /></ProtectedRoute>} />
 
-      {/* 🔵 OLD REVIEW PAGE (KEEP) */}
+      {/* 🟢 APPROVED APPLICATIONS */}
+      <Route
+        path="/bank/approved"
+        element={
+          <ProtectedRoute role="bank">
+            <ApprovedApplications />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 🔴 REJECTED APPLICATIONS */}
+      <Route
+        path="/bank/rejected"
+        element={
+          <ProtectedRoute role="bank">
+            <RejectedApplications />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 🔍 REVIEW (COMMON FOR ALL PAGES) */}
       <Route
         path="/bank/review/:caseNumber"
         element={
@@ -82,7 +105,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* 🟢 NEW BANK REVIEW PAGE (API BASED) */}
+      {/* 🔍 API BASED REVIEW */}
       <Route
         path="/bank/bank-review/:id"
         element={
@@ -95,6 +118,7 @@ const AppRoutes = () => {
       {/* Redirect */}
       <Route path="/bank/review" element={<Navigate to="/bank/applications" replace />} />
 
+      {/* Other Bank Pages */}
       <Route path="/bank/documents" element={<ProtectedRoute role="bank"><BankDocuments /></ProtectedRoute>} />
       <Route path="/bank/offers" element={<ProtectedRoute role="bank"><Offers /></ProtectedRoute>} />
       <Route path="/bank/reports" element={<ProtectedRoute role="bank"><BankReports /></ProtectedRoute>} />

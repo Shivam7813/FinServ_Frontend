@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class UpdateRoiDTO {
     //update roi id
-    private Long id;
+    private Long bankid;
     private Double roiMin;
     private Double roiMax;
 }

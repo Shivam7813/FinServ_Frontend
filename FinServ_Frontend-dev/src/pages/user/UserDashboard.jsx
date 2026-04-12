@@ -53,11 +53,14 @@ export default function UserDashboard() {
     (a) =>
       a.status === "UNDER_REVIEW" ||
       a.status === "SUBMITTED_TO_BANK" ||
+      a.status === "ASSIGNED_TO_BANK" ||
       a.status === "DOCUMENTS_PENDING" ||
       a.status === "PENDING"
   ).length;
   const approved = applications.filter(a => a.status === "APPROVED").length;
-  const rejected = applications.filter(a => a.status === "REJECTED").length;
+  const rejected = applications.filter(
+    (a) => a.status === "REJECTED" || a.status === "REJECTED_BY_ADMIN"
+  ).length;
 
   // ✅ STATUS COLOR
   const getStatusColor = (status) => {
@@ -65,6 +68,7 @@ export default function UserDashboard() {
       case "APPROVED":
         return "text-green-500";
       case "REJECTED":
+      case "REJECTED_BY_ADMIN":
         return "text-red-500";
       case "UNDER_REVIEW":
         return "text-yellow-500";

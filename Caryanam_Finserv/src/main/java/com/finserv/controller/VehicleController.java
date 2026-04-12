@@ -5,9 +5,11 @@ import com.finserv.dto.VehicleResponseDTO;
 import com.finserv.exception.BadRequestException;
 import com.finserv.service.VehicleService;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 @RestController
 @RequestMapping("/api/vehicle")
 public class VehicleController {
@@ -15,17 +17,17 @@ public class VehicleController {
     @Autowired
     private VehicleService vehicleService;
 
-    // ✅ SAVE VEHICLE (BODY BASED)
+    // ✅ SAVE VEHICLE
     @PostMapping("/add")
     public ResponseEntity<VehicleResponseDTO> saveVehicle(
-            @RequestBody VehicleRequestDTO dto) {
+            @Valid @RequestBody VehicleRequestDTO dto) {
 
         // 0️⃣ DTO NULL CHECK
         if (dto == null) {
             throw new BadRequestException("Request body is missing");
         }
 
-        // 1️⃣ Loan ID (NOW FROM BODY)
+        // 1️⃣ Loan ID
         if (dto.getLoanId() == null || dto.getLoanId() <= 0) {
             throw new BadRequestException("Invalid loan ID");
         }
@@ -109,15 +111,21 @@ public class VehicleController {
                 .body(vehicleService.saveVehicle(dto.getLoanId(), dto));
     }
 
-    // ✅ GET VEHICLE (BODY BASED)
+    // ✅ GET VEHICLE
     @PostMapping("/get")
     public ResponseEntity<VehicleResponseDTO> getVehicle(
-            @RequestBody VehicleRequestDTO dto) {
+            @Valid @RequestBody VehicleRequestDTO dto) {
+
+        if (dto == null) {
+            throw new BadRequestException("Request body is missing");
+        }
 
         if (dto.getLoanId() == null || dto.getLoanId() <= 0) {
             throw new BadRequestException("Invalid loan ID");
         }
 
-        return ResponseEntity.ok(vehicleService.getVehicle(dto.getLoanId()));
+        return ResponseEntity.ok(
+                vehicleService.getVehicle(dto.getLoanId())
+        );
     }
 }

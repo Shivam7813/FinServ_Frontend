@@ -27,7 +27,9 @@ public class LoanApplication {
 
     private Integer tenure;
 
+    /** Persisted as VARCHAR(64); run sql/mysql-fix-loan-status-column.sql if MySQL ENUM truncates. */
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 64)
     private LoanStatus status;
 
     private LocalDate createdDate;
@@ -49,4 +51,9 @@ public class LoanApplication {
     @ManyToOne
     @JoinColumn(name = "bank_id")
     private Bank bank;
+
+    /** Set when admin rejects the case (REJECTED_BY_ADMIN) */
+    @Column(length = 2000)
+    private String adminRemark;
+
 }

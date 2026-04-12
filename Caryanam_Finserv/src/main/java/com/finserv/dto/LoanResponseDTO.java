@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 @Data
 public class LoanResponseDTO {
-    private Long id;
+    private Long loanid;
     private String caseNumber;
     private String loanType;
     private Double loanAmount;
