@@ -37,6 +37,7 @@ export default function MyApplications() {
           carModel: app.loanType || "-",
           amount: "₹" + app.loanAmount,
           status: formatStatus(app.status),
+          remark: app.adminRemark || app.remark || "—",
           bank: app.bank || "—",
         }));
 
@@ -120,6 +121,9 @@ export default function MyApplications() {
                     <th className="text-left font-medium py-3 px-4">
                       Status
                     </th>
+                    <th className="text-left font-medium py-3 px-4">
+                      Remark
+                    </th>
                     <th className="text-left font-medium py-3 pl-4 pr-2 sm:pl-4 sm:pr-4">
                       Bank
                     </th>
@@ -145,6 +149,9 @@ export default function MyApplications() {
                         )}`}
                       >
                         {app.status}
+                      </td>
+                      <td className="py-3.5 px-4 text-gray-700 max-w-xs truncate" title={app.remark}>
+                        {app.remark}
                       </td>
                       <td className="py-3.5 pl-4 pr-2 sm:pl-4 sm:pr-4 text-gray-700">
                         {app.bank}

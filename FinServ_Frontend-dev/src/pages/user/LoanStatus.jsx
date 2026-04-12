@@ -25,6 +25,7 @@ export default function LoanStatus() {
         loanAmount: app.loanAmount,
         tenure: app.tenure || 60,
         status: formatStatus(app.status),
+        remark: app.remark || app.adminRemark || "",
       }));
 
       setApplications(formatted);
@@ -88,6 +89,13 @@ export default function LoanStatus() {
                     {app.status}
                   </span>
                 </div>
+
+                {app.remark ? (
+                  <div className="mt-3 text-sm text-gray-600">
+                    <p className="font-medium text-gray-800">Remark</p>
+                    <p>{app.remark}</p>
+                  </div>
+                ) : null}
 
                 {/* Progress Bar */}
                 <div className="mt-4">

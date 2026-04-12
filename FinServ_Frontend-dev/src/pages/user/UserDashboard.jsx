@@ -173,6 +173,9 @@ export default function UserDashboard() {
                     <th className="text-left font-medium py-3 px-4 align-middle">
                       Status
                     </th>
+                    <th className="text-left font-medium py-3 px-4 align-middle">
+                      Remark
+                    </th>
                     <th className="text-left font-medium py-3 pl-4 pr-2 sm:pr-4 align-middle">
                       Date
                     </th>
@@ -201,6 +204,9 @@ export default function UserDashboard() {
                         )}`}
                       >
                         {app.status.replaceAll("_", " ")}
+                      </td>
+                      <td className="py-3.5 px-4 align-middle text-gray-700 max-w-xs truncate" title={app.remark}>
+                        {app.remark || "-"}
                       </td>
                       <td className="py-3.5 pl-4 pr-2 sm:pr-4 align-middle text-gray-700">
                         {app.submittedAt || "-"}
