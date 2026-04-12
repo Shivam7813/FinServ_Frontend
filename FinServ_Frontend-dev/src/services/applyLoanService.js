@@ -1,6 +1,10 @@
 // src/services/applyLoanService.js — POST /api/loans/create
 
-import { createLoanViaApi, ensureUserProfile } from "./userLoanApi";
+import {
+  createLoanViaApi,
+  resolveUserIdForLoan,
+  fetchBanks,
+} from "./userLoanApi";
 
 function normalizeTenure(months) {
   let t = Number(months);
@@ -16,19 +20,9 @@ function normalizeTenure(months) {
 
 /**
  * @param {object} formData — ApplyLoan form fields
- * @param {number} bankId — selected bank (required by backend)
+ * @param {number} bankId — selected bank (optional)
  */
-export const applyLoan = async (formData, bankId) => {
-  const profile = await ensureUserProfile();
-  if (!profile?.userId) {
-    throw new Error(
-      "Your profile could not be loaded. Log out and log in again."
-    );
-  }
-  if (bankId == null || Number(bankId) <= 0) {
-    throw new Error("Please select a bank.");
-  }
-
+export const applyLoan = async (formData, bankId = null) => {
   const loanAmount = Number(formData.loanAmount);
   const downPayment = Number(formData.downPayment);
 
@@ -47,12 +41,39 @@ export const applyLoan = async (formData, bankId) => {
 
   const tenure = normalizeTenure(formData.tenure);
 
-  return createLoanViaApi({
+  const bankIdNum =
+    bankId != null && Number(bankId) > 0 ? Number(bankId) : null;
+  const [userId, banks] = await Promise.all([
+    resolveUserIdForLoan(),
+    bankIdNum == null ? fetchBanks() : Promise.resolve(null),
+  ]);
+
+  if (userId == null) {
+    throw new Error(
+      "We could not find your account ID. Log out, log in again, or contact support if this continues."
+    );
+  }
+
+  let resolvedBankId = bankIdNum;
+  if (resolvedBankId == null) {
+    const first = banks?.[0];
+    const id = Number(first?.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new Error(
+        "No partner bank is configured. Please ask an admin to add a bank, then try again."
+      );
+    }
+    resolvedBankId = id;
+  }
+
+  const payload = {
     loanType,
     loanAmount,
     downPayment,
     tenure,
-    userId: profile.userId,
-    bankId: Number(bankId),
-  });
+    userId,
+    bankId: resolvedBankId,
+  };
+
+  return createLoanViaApi(payload);
 };

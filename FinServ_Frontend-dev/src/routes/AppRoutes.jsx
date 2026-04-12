@@ -35,7 +35,6 @@ import UserDashboard from "../pages/user/UserDashboard";
 import ApplyLoan from "../pages/user/ApplyLoan";
 import MyApplications from "../pages/user/MyApplications";
 import MyDocuments from "../pages/user/MyDocuments";
-import LoanOffers from "../pages/user/LoanOffers";
 import UserSettings from "../pages/user/UserSettings";
 import LoanStatus from "../pages/user/LoanStatus";
 
@@ -128,7 +127,6 @@ const AppRoutes = () => {
       <Route path="/user/apply-loan" element={<ProtectedRoute role="user"><ApplyLoan /></ProtectedRoute>} />
       <Route path="/user/applications" element={<ProtectedRoute role="user"><MyApplications /></ProtectedRoute>} />
       <Route path="/user/documents" element={<ProtectedRoute role="user"><MyDocuments /></ProtectedRoute>} />
-      <Route path="/user/offers" element={<ProtectedRoute role="user"><LoanOffers /></ProtectedRoute>} />
       <Route path="/user/settings" element={<ProtectedRoute role="user"><UserSettings /></ProtectedRoute>} />
       <Route path="/user/loan-status" element={<ProtectedRoute role="user"><LoanStatus /></ProtectedRoute>} />
 

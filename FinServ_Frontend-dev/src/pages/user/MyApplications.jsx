@@ -80,60 +80,83 @@ export default function MyApplications() {
 
   return (
     <AdminLayout>
+      <div className="max-w-6xl mx-auto w-full px-1 sm:px-2">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">
+          My Loan Applications
+        </h2>
 
-      <h2 className="text-xl font-semibold mb-4">
-        My Loan Applications
-      </h2>
+        <input
+          type="search"
+          placeholder="Search my applications…"
+          className="border border-gray-200 bg-white px-4 py-2.5 rounded-lg w-full max-w-lg mb-6 shadow-sm focus:ring-2 focus:ring-teal-400 focus:border-teal-400 outline-none transition"
+          value={search}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          aria-label="Filter my applications"
+        />
 
-      <input
-        type="search"
-        placeholder="Search my applications…"
-        className="border px-3 py-2 rounded-lg w-full max-w-md mb-4"
-        value={search}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        aria-label="Filter my applications"
-      />
+        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-x-auto">
+          <div className="p-5 sm:p-6 md:p-8">
+            {applications.length === 0 ? (
+              <div className="text-center text-gray-500 py-10 px-4">
+                No applications found
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center text-gray-500 py-10 px-4">
+                No applications match your search
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-500 border-b border-gray-200">
+                    <th className="text-left font-medium py-3 pl-2 pr-4 sm:pl-4 sm:pr-4">
+                      Loan ID
+                    </th>
+                    <th className="text-left font-medium py-3 px-4">
+                      Car Model
+                    </th>
+                    <th className="text-left font-medium py-3 px-4">
+                      Amount
+                    </th>
+                    <th className="text-left font-medium py-3 px-4">
+                      Status
+                    </th>
+                    <th className="text-left font-medium py-3 pl-4 pr-2 sm:pl-4 sm:pr-4">
+                      Bank
+                    </th>
+                  </tr>
+                </thead>
 
-      <div className="bg-white p-4 rounded-lg shadow">
-
-        {applications.length === 0 ? (
-          <div className="text-center text-gray-500 py-6">
-            No applications found
+                <tbody>
+                  {filtered.map((app, index) => (
+                    <tr
+                      key={index}
+                      className="border-b border-gray-100 last:border-0 hover:bg-gray-50/80"
+                    >
+                      <td className="py-3.5 pl-2 pr-4 sm:pl-4 sm:pr-4 text-gray-800">
+                        {app.id}
+                      </td>
+                      <td className="py-3.5 px-4 text-gray-700">{app.carModel}</td>
+                      <td className="py-3.5 px-4 text-gray-800 font-medium">
+                        {app.amount}
+                      </td>
+                      <td
+                        className={`py-3.5 px-4 font-medium ${getStatusColor(
+                          app.status
+                        )}`}
+                      >
+                        {app.status}
+                      </td>
+                      <td className="py-3.5 pl-4 pr-2 sm:pl-4 sm:pr-4 text-gray-700">
+                        {app.bank}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center text-gray-500 py-6">
-            No applications match your search
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-gray-500 border-b">
-                <th className="py-2">Loan ID</th>
-                <th>Car Model</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Bank</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filtered.map((app, index) => (
-                <tr key={index} className="border-b">
-                  <td className="py-2">{app.id}</td>
-                  <td>{app.carModel}</td>
-                  <td>{app.amount}</td>
-                  <td className={getStatusColor(app.status)}>
-                    {app.status}
-                  </td>
-                  <td>{app.bank}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
+        </div>
       </div>
-
     </AdminLayout>
   );
 }
