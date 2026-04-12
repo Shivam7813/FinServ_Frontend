@@ -1,4 +1,5 @@
 import AdminLayout from "../../layouts/AdminLayout";
+import { useAuth } from "../../context/AuthContext";
 import {
   useNavigate,
   useLocation,
@@ -9,6 +10,7 @@ import axios from "axios";
 import { API_BASE_URL } from "../../config/apiBase";
 
 export default function Applications() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,6 +26,9 @@ export default function Applications() {
         const response = await axios.get(
           `${API_BASE_URL}/api/loans/dashboard`
         );
+
+        console.log("API DATA:", response.data); // 🔥 DEBUG
+        console.log("USER:", user); // 🔥 DEBUG
 
         setApplications(response.data || []);
       } catch (error) {
@@ -44,23 +49,28 @@ export default function Applications() {
   };
 
   const filteredApps = applications.filter((app) => {
-    const haystack =
-      `${app.customerName} ${app.caseNumber} ${app.mobile} ${app.vehicle} ${app.bank} ${app.loanAmount}`.toLowerCase();
 
-    const matchesSearch =
-      !search.trim() || haystack.includes(search.toLowerCase());
+  const bankName = (app.bank || "").toLowerCase();
+  const userBank = (user?.bankName || "").toLowerCase();
 
-    if (isUnderReviewPage) {
-      return (
-        matchesSearch &&
-        (app.status === "UNDER_REVIEW" ||
-          app.status === "SUBMITTED_TO_BANK" ||
-          app.status === "ASSIGNED_TO_BANK")
-      );
-    }
+  // 🔥 TEMP FIX → allow all if bank empty
+  const isSameBank =
+    !bankName || bankName.includes(userBank);
 
-    return matchesSearch;
-  });
+  // 🔥 TEMP FIX → allow more statuses
+  const isValidStatus =
+    app.status === "ASSIGNED_TO_BANK" ||
+    app.status === "APPROVED" ||
+    app.status === "SUBMITTED_TO_BANK"; // 👈 ADD THIS
+
+  const haystack =
+    `${app.customerName} ${app.caseNumber} ${app.mobile} ${app.vehicle} ${app.bank} ${app.loanAmount}`.toLowerCase();
+
+  const matchesSearch =
+    !search.trim() || haystack.includes(search.toLowerCase());
+
+  return isSameBank && isValidStatus && matchesSearch;
+});
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -133,12 +143,10 @@ export default function Applications() {
                   {/* LEFT */}
                   <div className="flex items-start gap-4">
 
-                    {/* Avatar */}
                     <div className="w-12 h-12 bg-blue-100 text-blue-600 flex items-center justify-center rounded-full font-semibold text-lg">
                       {name.charAt(0)}
                     </div>
 
-                    {/* DETAILS */}
                     <div className="space-y-1">
 
                       <h3 className="font-semibold text-lg text-gray-800">
