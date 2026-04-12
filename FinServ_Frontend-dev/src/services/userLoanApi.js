@@ -279,6 +279,7 @@ function mapDashboardRow(raw) {
     loanAmount: amount,
     status,
     submittedAt: typeof date === "string" ? date.split("T")[0] : date,
+    remark: raw.adminRemark || raw.remark || raw.notes || "",
     bank: raw.bank || "",
   };
 }
