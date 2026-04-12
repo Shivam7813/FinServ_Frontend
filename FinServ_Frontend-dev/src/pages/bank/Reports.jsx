@@ -30,9 +30,10 @@ export default function Reports() {
     (app) => app.status?.toUpperCase() === "APPROVED"
   ).length;
 
-  const rejected = applications.filter(
-    (app) => app.status?.toUpperCase() === "REJECTED"
-  ).length;
+  const rejected = applications.filter((app) => {
+    const s = app.status?.toUpperCase();
+    return s === "REJECTED" || s === "REJECTED_BY_ADMIN";
+  }).length;
 
   // ✅ FIXED STATUS HANDLING (IMPORTANT)
   const pending = applications.filter((app) => {
@@ -41,7 +42,9 @@ export default function Reports() {
     return (
       status === "PENDING" ||
       status === "UNDER_REVIEW" ||
-      status === "SUBMITTED_TO_BANK"
+      status === "SUBMITTED_TO_BANK" ||
+      status === "ASSIGNED_TO_BANK" ||
+      status === "DOCUMENTS_PENDING"
     );
   }).length;
 

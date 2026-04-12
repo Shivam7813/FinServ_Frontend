@@ -28,14 +28,15 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
         l.loanAmount,
         b.bankName,
         l.status,
-        l.createdDate
-        
+        l.createdDate,
+        l.adminRemark
     )
     FROM LoanApplication l
     JOIN l.user u
     LEFT JOIN u.personalDetails pd
     LEFT JOIN l.vehicle v
     LEFT JOIN l.bank b
+    WHERE l.isDeleted = false
 """)
     List<LoanDashboardDTO> getAllLoanCases();
 

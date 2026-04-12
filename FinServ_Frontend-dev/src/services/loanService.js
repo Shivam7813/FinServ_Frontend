@@ -13,6 +13,8 @@ export function mapLoanDashboardRow(row) {
     submittedAt: row.createdDate ?? "—",
     mobile: row.mobile,
     bank: row.bank,
+    adminRemark: row.adminRemark ?? "",
+    missingDocuments: row.missingDocuments ?? [],
   };
 }
 
@@ -48,6 +50,30 @@ export async function updateLoanStatus(caseNumber, status) {
     return typeof data === "string" ? data : "Rejected";
   }
   throw new Error(`Unsupported status transition: ${status}`);
+}
+
+/** Admin: assign bank → backend status ASSIGNED_TO_BANK */
+export async function adminAssignBank(caseNumber, bankId) {
+  const cn = String(caseNumber ?? "").trim();
+  if (!cn) throw new Error("Missing case number");
+  const { data } = await API.post("/loans/assign-to-bank", {
+    caseNumber: cn,
+    bankId: Number(bankId),
+  });
+  return typeof data === "string" ? data : "Assigned";
+}
+
+/** Admin: reject with remark → REJECTED_BY_ADMIN */
+export async function adminRejectCase(caseNumber, remark) {
+  const cn = String(caseNumber ?? "").trim();
+  if (!cn) throw new Error("Missing case number");
+  const r = String(remark ?? "").trim();
+  if (!r) throw new Error("Remark is required");
+  const { data } = await API.post("/loans/reject-by-admin", {
+    caseNumber: cn,
+    remark: r,
+  });
+  return typeof data === "string" ? data : "Rejected";
 }
 
 export async function deleteLoan() {

@@ -40,5 +40,8 @@ public interface LoanService {
 
     String rejectLoan(String caseNumber);
 
+    String assignBankByAdmin(String caseNumber, Long bankId);
+
+    String rejectByAdmin(String caseNumber, String remark);
 
 }
