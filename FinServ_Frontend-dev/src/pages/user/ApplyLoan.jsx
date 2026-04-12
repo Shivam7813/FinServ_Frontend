@@ -2,16 +2,34 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
-import axios from "axios";
+import API from "../../api/api";
 
-// ✅ SERVICE
 import { applyLoan } from "../../services/applyLoanService";
-import { fetchBanks } from "../../services/userLoanApi";
+import {
+  fetchBanks,
+  syncUserProfileFromDashboard,
+  mergeFormMobileIntoStoredUser,
+} from "../../services/userLoanApi";
 
 export default function ApplyLoan() {
   const navigate = useNavigate();
-  const [banks, setBanks] = useState([]);
-  const [bankId, setBankId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [prefetchedBankId, setPrefetchedBankId] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchBanks()
+      .then((banks) => {
+        const id = Number(banks[0]?.id);
+        if (!cancelled && Number.isFinite(id) && id > 0) {
+          setPrefetchedBankId(id);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [form, setForm] = useState({
     fullName: "",
     mobile: "",
@@ -32,22 +50,6 @@ export default function ApplyLoan() {
   const [documents, setDocuments] = useState({});
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const list = await fetchBanks();
-        setBanks(list);
-        if (list.length === 1) {
-          setBankId(String(list[0].id));
-        }
-      } catch (e) {
-        console.error(e);
-        toast.error("Could not load banks. Is the server running?");
-      }
-    };
-    load();
-  }, []);
-
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -66,95 +68,81 @@ export default function ApplyLoan() {
     if (!form.downPayment) newErrors.downPayment = "Down payment is required";
     if (!form.tenure) newErrors.tenure = "Tenure is required (6–360, steps of 6)";
     if (!form.carType) newErrors.carType = "Select car type";
-    if (!bankId) newErrors.bankId = "Select a bank";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const uploadSingleDocument = async (loanId, type, file) => {
-  const formData = new FormData();
-  formData.append("loanId", loanId);
-  formData.append("type", type);
-  formData.append("file", file);
-
-  return axios.post("http://localhost:8080/api/documents/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-    };
+    const formData = new FormData();
+    formData.append("loanId", loanId);
+    formData.append("type", type);
+    formData.append("file", file);
+    return API.post("/documents/upload", formData);
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validate()) return;
 
     try {
-      // ✅ AUTO USER NAME
-      const user = JSON.parse(localStorage.getItem("user"));
+      setSubmitting(true);
+      let user = {};
+      try {
+        user = JSON.parse(localStorage.getItem("user") || "{}");
+      } catch {
+        user = {};
+      }
 
       const payload = {
         ...form,
         fullName: user?.name || form.fullName,
       };
 
-      const response = await applyLoan(payload, Number(bankId));
+      const response = await applyLoan(payload, prefetchedBankId);
 
-    // 🔥 GET LOAN ID (VERY IMPORTANT)
-    // ✅ GET LOAN ID (robust extraction)
-const loanId =
-  response?.data?.id ??
-  response?.data?.loanId ??
-  response?.id ??
-  response?.loanId;
+      const loanId =
+        response?.loanid ??
+        response?.data?.loanid ??
+        response?.data?.id ??
+        response?.data?.loanId ??
+        response?.id ??
+        response?.loanId;
 
-console.log("Loan Response:", response);
-console.log("Loan ID:", loanId);
+      if (!loanId) {
+        toast.error("Loan created but Loan ID not found!");
+        return;
+      }
 
-// ❌ STOP if loanId missing
-if (!loanId) {
-  console.error("Loan ID missing. Full response:", response);
-  toast.error("Loan created but Loan ID not found!");
-  return;
-}
+      const uploadSafe = async (type, file) => {
+        try {
+          await uploadSingleDocument(loanId, type, file);
+        } catch (error) {
+          console.error(`${type} upload failed`, error);
+        }
+      };
 
-// ✅ SAFE upload helper (prevents crash)
-const uploadSafe = async (type, file) => {
-  try {
-    await uploadSingleDocument(loanId, type, file);
-    console.log(`${type} uploaded successfully`);
-  } catch (error) {
-    console.error(`${type} upload failed`, error);
-  }
-};
+      const uploadPromises = [];
+      if (documents?.aadhaarDoc) {
+        uploadPromises.push(uploadSafe("AADHAAR", documents.aadhaarDoc));
+      }
+      if (documents?.panDoc) {
+        uploadPromises.push(uploadSafe("PAN", documents.panDoc));
+      }
+      if (documents?.salarySlips) {
+        uploadPromises.push(uploadSafe("SALARY_SLIP", documents.salarySlips));
+      }
+      if (documents?.bankStatements) {
+        uploadPromises.push(uploadSafe("BANK_STATEMENT", documents.bankStatements));
+      }
 
-console.log("Uploading documents for loanId:", loanId);
-console.log("Documents:", documents);
+      await Promise.all(uploadPromises);
 
-const uploadPromises = [];
-
-if (documents?.aadhaarDoc) {
-  uploadPromises.push(uploadSafe("AADHAAR", documents.aadhaarDoc));
-}
-
-if (documents?.panDoc) {
-  uploadPromises.push(uploadSafe("PAN", documents.panDoc));
-}
-
-if (documents?.salarySlips) {
-  uploadPromises.push(uploadSafe("SALARY_SLIP", documents.salarySlips));
-}
-
-if (documents?.bankStatements) {
-  uploadPromises.push(uploadSafe("BANK_STATEMENT", documents.bankStatements));
-}
-
-// 🔥 Run all uploads together
-await Promise.all(uploadPromises);
+      mergeFormMobileIntoStoredUser(form.mobile);
+      await syncUserProfileFromDashboard();
 
       toast.success("Loan application submitted");
 
-      // ✅ RESET FORM
       setForm({
         fullName: "",
         mobile: "",
@@ -174,7 +162,6 @@ await Promise.all(uploadPromises);
 
       setDocuments({});
       setErrors({});
-      setBankId(banks.length === 1 ? String(banks[0].id) : "");
       navigate("/user/dashboard", { replace: true });
     } catch (err) {
       console.error(err);
@@ -183,6 +170,8 @@ await Promise.all(uploadPromises);
         err.message ||
         "Something went wrong. Please try again.";
       toast.error(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -226,31 +215,6 @@ await Promise.all(uploadPromises);
             <Input label="Down Payment" name="downPayment" value={form.downPayment} onChange={handleChange} error={errors.downPayment} />
             <Input label="Loan Amount" name="loanAmount" value={form.loanAmount} onChange={handleChange} error={errors.loanAmount} />
             <Input label="Loan Tenure (months, e.g. 60)" name="tenure" value={form.tenure} onChange={handleChange} error={errors.tenure} />
-
-            <div className="md:col-span-2">
-              <label className="text-sm text-gray-600">Preferred bank</label>
-              <select
-                value={bankId}
-                onChange={(e) => setBankId(e.target.value)}
-                className="w-full mt-1 p-2 border rounded-lg"
-              >
-                <option value="">Select bank</option>
-                {banks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.bankName}
-                  </option>
-                ))}
-              </select>
-              {errors.bankId && (
-                <p className="text-red-500 text-xs mt-1">{errors.bankId}</p>
-              )}
-              {banks.length === 0 && (
-                <p className="text-amber-600 text-xs mt-1">
-                  No banks in the system yet. An admin must add a bank before you
-                  can apply.
-                </p>
-              )}
-            </div>
 
           </div>
         </div>
@@ -411,9 +375,10 @@ await Promise.all(uploadPromises);
         {/* SUBMIT */}
         <button
           type="submit"
-          className="bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-teal-600"
+          disabled={submitting}
+          className="bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-teal-600 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Submit Application
+          {submitting ? "Submitting…" : "Submit Application"}
         </button>
 
       </form>
