@@ -28,8 +28,9 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
         l.loanAmount,
         b.bankName,
         l.status,
-        l.createdDate,
-        l.adminRemark
+        l.loanType,
+        l.createdDate
+        
     )
     FROM LoanApplication l
     JOIN l.user u

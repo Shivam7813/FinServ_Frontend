@@ -170,6 +170,7 @@ public class LoanServiceImpl implements LoanService {
                     l.getLoanAmount(),
                     bankName,
                     l.getStatus(),
+                    l.getLoanType(),
                     l.getCreatedDate(),
                     missingDocuments,
                     l.getAdminRemark()
@@ -388,9 +389,20 @@ public class LoanServiceImpl implements LoanService {
     private LoanDashboardDTO mapToDTO(LoanApplication l) {
 
         String fullName = "";
-        if (l.getUser() != null && l.getUser().getPersonalDetails() != null) {
-            fullName = l.getUser().getPersonalDetails().getFullName();
-        }
+
+if (l.getUser() != null) {
+
+    if (l.getUser().getPersonalDetails() != null &&
+        l.getUser().getPersonalDetails().getFullName() != null) {
+
+        fullName = l.getUser().getPersonalDetails().getFullName();
+
+    } else {
+
+        // 🔥 fallback (since no getName())
+        fullName = "Customer"; // or "N/A"
+    }
+}
 
         String mobile = "";
         if (l.getUser() != null) {
@@ -428,18 +440,32 @@ public class LoanServiceImpl implements LoanService {
         }
 
         // ✅ Return DTO
+        // return new LoanDashboardDTO(
+        //         l.getCaseNumber(),
+        //         fullName,
+        //         mobile,
+        //         vehicle,
+        //         l.getLoanAmount(),
+        //         bank,
+        //         l.getStatus(),
+        //         l.getLoanType(),
+        //         l.getCreatedDate(),
+        //         missingDocs,
+        //         l.getAdminRemark()
+        // );
         return new LoanDashboardDTO(
-                l.getCaseNumber(),
-                fullName,
-                mobile,
-                vehicle,
-                l.getLoanAmount(),
-                bank,
-                l.getStatus(),
-                l.getCreatedDate(),
-                missingDocs,
-                l.getAdminRemark()
-        );
+        l.getCaseNumber(),
+        fullName,
+        mobile,
+        vehicle,
+        l.getLoanAmount(),
+        bank,
+        l.getStatus(),
+        l.getLoanType(),
+        l.getCreatedDate(),
+        missingDocs,
+        l.getAdminRemark()
+);
     }
 
     @Override

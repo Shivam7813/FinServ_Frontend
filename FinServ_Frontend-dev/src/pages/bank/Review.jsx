@@ -1,10 +1,11 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiBase";
+// import axios from "axios";
+// import { API_BASE_URL } from "../../config/apiBase";
 import { fetchAdminDocumentDashboard } from "../../services/documentService";
 import { adminRejectCase } from "../../services/loanService";
+import { getLoans } from "../../services/loanService";
 
 export default function Review() {
   const { caseNumber } = useParams(); 
@@ -23,113 +24,55 @@ export default function Review() {
   // const [previewUrl, setPreviewUrl] = useState(null);
 
   // ✅ FETCH DATA
-  const fetchData = async () => {
-    setLoading(true);
+      const fetchData = async () => {
+        setLoading(true);
 
-    try {
-      const res = await axios.post(
-        `${API_BASE_URL}/api/loans/search`,
-        { caseNumber, name: "" },
-        { headers: { "Content-Type": "application/json" } }
-      );
+        try {
+          const apps = await getLoans();
 
-      console.log("FULL API RESPONSE:", res.data);
+          console.log("Loans API:", apps);
 
-const list =
-  res.data?.content ||   // Spring pageable
-  res.data?.data ||      // wrapped response
-  res.data || [];        // direct array
+          const normalize = (str) =>
+            (str || "").toLowerCase().replace(/\s+/g, "").trim();
 
-if (!Array.isArray(list) || list.length === 0) {
-  setApplication(null);
-  return;
-}
+          const found = apps.find(
+            (a) =>
+              normalize(a.caseNumber).includes(normalize(caseNumber)) ||
+              normalize(caseNumber).includes(normalize(a.caseNumber))
+          );
 
-const raw = list[0];
+          if (!found) {
+            setApplication(null);
+            setLoading(false);
+            return;
+          }
 
-      const mapped = {
-  id: raw.id,
+          setApplication(found);
+          setStatus(found.status);
 
-  // ✅ FIX NAME (VERY IMPORTANT)
-  customerName:
-    raw.customerName ||
-    raw.customer_name ||
-    raw.applicantName ||
-    raw.applicant_name ||
-    raw.userName ||
-    raw.name ||
-    raw.customer ||   // 🔥 THIS FIXES "Bank" ISSUE
-    "N/A",
+          let docs = [];
 
-  // ✅ FIX AMOUNT
-  loanAmount:
-    raw.loanAmount ||
-    raw.loan_amount ||
-    raw.amount ||
-    raw.loanAmt ||
-    0,
+          try {
+            const allDocs = await fetchAdminDocumentDashboard();
 
-  // ✅ FIX LOAN TYPE (MAIN ISSUE)
-  loanType:
-    raw.loanType ||
-    raw.loan_type ||
-    raw.vehicle ||        // 🔥 MOST IMPORTANT
-    raw.vehicleType ||
-    raw.loanCategory ||
-    raw.type ||
-    raw.loanName ||        // 🔥 ADD THIS
-    raw.productType ||     // 🔥 ADD THIS
-    raw.scheme ||  
-    "N/A",
+            const caseData = allDocs.find((c) =>
+              normalize(c.caseNumber).includes(normalize(caseNumber))
+            );
 
-  status: raw.status || "PENDING",
+            docs = caseData?.documents || [];
+          } catch (err) {
+            console.error("Doc fetch error:", err);
+          }
 
-  // ✅ DATE
-  submittedAt:
-    raw.submittedAt ||
-    raw.createdAt ||
-    raw.createdDate ||
-    raw.date ||
-    "N/A",
+          setDocuments(docs);
 
-    adminRemark:
-    raw.adminRemark ||
-    raw.remark ||
-    raw.admin_remark ||
-    "",
-};
-     let docs = [];
+        } catch (err) {
+          console.error("Fetch error:", err);
+          setApplication(null);
+        }
 
-try {
-  const allDocs = await fetchAdminDocumentDashboard();
-
-  const normalize = (str) =>
-  (str || "").toLowerCase().replace(/\s+/g, "").trim();
-
-  const caseData = allDocs.find((c) => {
-  return normalize(c.caseNumber).includes(normalize(caseNumber)) ||
-          normalize(caseNumber).includes(normalize(c.caseNumber));
-  });
-
-
-  docs = caseData?.documents || [];
-
-} catch (err) {
-  console.error("Doc fetch error:", err);
-
-      }
-
-      setApplication(mapped);
-      setDocuments(docs);
-      setStatus(mapped.status);
-
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setApplication(null);
-    }
-
-    setLoading(false);
-  };
+        setLoading(false);
+      };
 
   useEffect(() => {
     fetchData();
@@ -262,8 +205,8 @@ try {
 
   <div>
     <h2 className="text-xl font-semibold text-gray-800">
-      {application?.customerName || "N/A"}
-    </h2>
+    {application?.fullName}
+  </h2>
 
     <p className="text-gray-500 text-sm mt-1">
       {application?.loanType || "N/A"} • ₹{Number(application?.loanAmount || 0).toLocaleString()}

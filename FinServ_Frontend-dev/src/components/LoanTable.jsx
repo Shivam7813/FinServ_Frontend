@@ -31,7 +31,7 @@ export default function LoanTable({ data = [] }) {
             <tr className="text-left text-gray-500 border-b">
               <th className="py-3">Case ID</th>
               <th>Customer</th>
-              <th>Loan Type</th>
+              <th>Vehicle</th>
               <th>Amount</th>
               <th>Status</th>
               <th>Date</th>

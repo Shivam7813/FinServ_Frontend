@@ -12,4 +12,6 @@ public class LoanRequestDTO {
     private Long userId;
     private Long bankId;
 
+
+    
 }

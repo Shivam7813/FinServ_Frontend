@@ -4,10 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { getLoggedInDisplayName } from "../../utils/displayName";
-
-// ✅ NEW SERVICE
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiBase";
+import { getLoans } from "../../services/loanService";
 
 export default function BankDashboard() {
   const navigate = useNavigate();
@@ -26,96 +23,45 @@ export default function BankDashboard() {
 
   // ✅ FETCH DATA FROM BACKEND
   const fetchData = async () => {
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/dashboard`);
-      let data = response.data;
+  try {
+    const apps = await getLoans();   
 
-      console.log("Dashboard API Response:", data);
+    console.log("Loans API:", apps); 
 
-      // 🔥 HANDLE CASE 1: ARRAY RESPONSE
-      if (Array.isArray(data)) {
-        const apps = data;
-        setApplications(apps);
+    setApplications(apps);           
 
-        const newApps = apps.length;
+    const newApps = apps.length;
 
-        const underReview = apps.filter(
-          (a) =>
-            a.status === "UNDER_REVIEW" ||
-            a.status === "PENDING" ||
-            a.status === "DOCUMENTS_PENDING"
-        ).length;
+    const underReview = apps.filter(
+      (a) =>
+        a.status === "UNDER_REVIEW" ||
+        a.status === "PENDING" ||
+        a.status === "DOCUMENTS_PENDING"
+    ).length;
 
-        const approved = apps.filter(
-          (a) => a.status === "APPROVED"
-        ).length;
+    const approved = apps.filter(
+      (a) => a.status === "APPROVED"
+    ).length;
 
-        const rejected = apps.filter(
-          (a) => a.status === "REJECTED"
-        ).length;
+    const rejected = apps.filter(
+      (a) => a.status === "REJECTED"
+    ).length;
 
-        setStats({
-          newApplications: newApps,
-          underReview,
-          approved,
-          rejected,
-        });
+    setStats({
+      newApplications: newApps,
+      underReview,
+      approved,
+      rejected,
+    });
 
-      } else {
-        // 🔥 HANDLE CASE 2: OBJECT RESPONSE
+  } catch (error) {
+    console.error("Error fetching loans:", error);
+  }
 
-        const apps =
-          data.recentLoans ||
-          data.loans ||
-          data.data ||
-          [];
-
-        setApplications(apps);
-
-        // ✅ FIXED LOGIC (IMPORTANT 🔥)
-        const newApplications =
-          data.activeLoanCases && data.activeLoanCases > 0
-            ? data.activeLoanCases
-            : data.totalLoans && data.totalLoans > 0
-            ? data.totalLoans
-            : apps.length;
-
-        const underReview =
-          data.pendingDocuments && data.pendingDocuments > 0
-            ? data.pendingDocuments
-            : apps.filter(
-                (a) =>
-                  a.status === "UNDER_REVIEW" ||
-                  a.status === "PENDING" ||
-                  a.status === "DOCUMENTS_PENDING"
-              ).length;
-
-        const approved =
-          data.approvedToday && data.approvedToday > 0
-            ? data.approvedToday
-            : apps.filter((a) => a.status === "APPROVED").length;
-
-        const rejected =
-          data.rejected && data.rejected > 0
-            ? data.rejected
-            : apps.filter((a) => a.status === "REJECTED").length;
-
-        setStats({
-          newApplications,
-          underReview,
-          approved,
-          rejected,
-        });
-      }
-
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-    }
-
-    setLoading(false);
-  };
+  setLoading(false);
+};
 
   useEffect(() => {
     fetchData();
@@ -200,43 +146,82 @@ export default function BankDashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-md p-6">
-            <h3 className="text-lg font-semibold mb-5">
-              📄 Recent Applications
-            </h3>
+      <div className="bg-white rounded-2xl shadow-md p-6">
+        <h3 className="text-lg font-semibold mb-5">
+          📄 Recent Loan Cases
+        </h3>
 
-            {applications.length === 0 ? (
-              <div className="text-center text-gray-500 py-6">
-                No applications available
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="p-3">Applicant</th>
-                    <th className="p-3">Loan Type</th>
-                    <th className="p-3">Amount</th>
-                    <th className="p-3">Status</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {applications.slice(0, 5).map((app, index) => (
-                    <tr key={index} className="border-t hover:bg-gray-50">
-                      <td className="p-3">{app.fullName || app.customerName || app.name || "N/A"}</td>
-                      <td className="p-3">{app.loanType || app.type || "N/A"}</td>
-                      <td className="p-3">₹{app.loanAmount || app.amount || 0}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded ${getStatusColor(app.status)}`}>
-                          {formatStatus(app.status || "PENDING")}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+        {applications.length === 0 ? (
+          <div className="text-center text-gray-500 py-6">
+            No applications available
           </div>
+        ) : (
+          <table className="w-full border-collapse">
+            
+            {/* HEADER */}
+            <thead>
+              <tr className="text-left text-gray-600 border-b">
+                <th className="p-3">Case ID</th>
+                <th className="p-3">Customer</th>
+                <th className="p-3">Vehicle</th>
+                <th className="p-3">Amount</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Date</th>
+              </tr>
+            </thead>
+
+            {/* BODY */}
+            <tbody>
+              {applications.slice(0, 5).map((app) => (
+                <tr
+                  key={app.caseNumber}
+                  className="border-b hover:bg-gray-50 transition"
+                >
+                  
+                  {/* Case ID (Clickable style) */}
+                  <td className="p-3 text-blue-600 font-medium cursor-pointer">
+                    {app.caseNumber}
+                  </td>
+
+                  {/* Customer */}
+                  <td className="p-3">
+                    {app.fullName || "—"}
+                  </td>
+
+                  {/* Vehicle */}
+                  <td className="p-3">
+                    {app.loanType || "—"}
+                  </td>
+
+                  {/* Amount */}
+                  <td className="p-3 font-medium">
+                    ₹{app.loanAmount}
+                  </td>
+
+                  {/* Status */}
+                  <td className="p-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        app.status
+                      )}`}
+                    >
+                      {formatStatus(app.status)}
+                    </span>
+                  </td>
+
+                  {/* Date */}
+                  <td className="p-3 text-gray-600">
+                    {app.createdAt
+                      ? app.createdAt.split("T")[0]
+                      : "—"}
+                  </td>
+
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
         </>
       )}
     </AdminLayout>

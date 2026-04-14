@@ -1,37 +1,32 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
-import axios from "axios";
-import { API_BASE_URL } from "../../config/apiBase";
+import { getLoans } from "../../services/loanService";
+import { useAuth } from "../../context/AuthContext";
+import { useSearchParams } from "react-router-dom";
+
 
 export default function RejectedApplications() {
   const navigate = useNavigate();
 
-  const [search, setSearch] = useState("");
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
+  const setSearchQuery = (value) => {
+  setSearch(value);
+  setSearchParams(value.trim() ? { q: value } : {}, { replace: true });
+};
+  const normalize = (str) =>
+  (str || "").toLowerCase().replace(/\s+/g, "").trim();
+    // ✅ FETCH FROM DASHBOARD
+    const { user } = useAuth();
 
-  // ✅ FETCH FROM DASHBOARD
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/dashboard`);
-        const data = res.data;
-
-        let apps = [];
-
-        if (Array.isArray(data)) {
-          apps = data;
-        } else {
-          apps =
-            data.recentLoans ||
-            data.loans ||
-            data.data ||
-            [];
-        }
-
-        setApplications(apps);
-
+        const data = await getLoans();
+        setApplications(data || []);
       } catch (error) {
         console.error("Error fetching rejected applications:", error);
       } finally {
@@ -42,28 +37,48 @@ export default function RejectedApplications() {
     fetchData();
   }, []);
 
-  // ✅ FILTER REJECTED + SEARCH
+    // ✅ FILTER REJECTED + SEARCH
   const filteredApps = useMemo(() => {
     return applications.filter((app) => {
 
+      // ✅ BANK MATCH
+      const loanBank = normalize(app.bank);
+      const userBank = normalize(
+        user?.bankName || user?.name || user?.email?.split("@")[0]
+      );
+
+      const isSameBank =
+        loanBank.includes(userBank) || userBank.includes(loanBank);
+
+      // ✅ ONLY REJECTED
+      const status = app?.status;
+
+      const isRejected =
+        status === "REJECTED" ||
+        status === "REJECTED_BY_ADMIN";
+
+      // ✅ SEARCH
       const haystack =
-        `${app.fullName} ${app.customerName} ${app.caseNumber} ${app.loanType} ${app.loanAmount}`.toLowerCase();
+        `${app.fullName} ${app.caseNumber} ${app.mobile} ${app.loanType} ${app.bank} ${app.loanAmount}`.toLowerCase();
 
       const matchesSearch =
         !search.trim() || haystack.includes(search.toLowerCase());
 
-      const status = app?.status?.toUpperCase();
-
-      return (
-        matchesSearch &&
-        (status === "REJECTED" || status === "REJECTED_BY_ADMIN")
-      );
+      return isSameBank && isRejected && matchesSearch;
     });
-  }, [applications, search]);
+  }, [applications, search, user]);
+
 
   // ✅ STATUS STYLE
-  const getStatusStyle = () =>
-    "bg-red-100 text-red-700";
+      const getStatusStyle = (status) => {
+      switch (status) {
+        case "REJECTED":
+        case "REJECTED_BY_ADMIN":
+          return "bg-red-100 text-red-700";
+        default:
+          return "bg-gray-100 text-gray-700";
+      }
+    };
 
   return (
     <AdminLayout>
@@ -86,7 +101,7 @@ export default function RejectedApplications() {
             type="search"
             placeholder="Search by case number, customer, loan…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="px-4 py-2 border rounded-lg text-sm w-full max-w-xs focus:ring-2 focus:ring-red-500"
           />
         </div>
@@ -125,15 +140,10 @@ export default function RejectedApplications() {
                 {/* BODY */}
                 <tbody className="text-gray-700">
                   {filteredApps.map((app) => {
-
-                    const name =
-                      app?.fullName ||
-                      app?.customerName ||
-                      "N/A";
-
-                    const loanType = app?.loanType || "—";
-                    const amount = app?.loanAmount || 0;
-                    const caseNumber = app?.caseNumber || "—";
+                   const name = app.fullName;
+                    const loanType = app.loanType;
+                    const amount = app.loanAmount;
+                    const caseNumber = app.caseNumber;
 
                     return (
                       <tr
@@ -152,9 +162,9 @@ export default function RejectedApplications() {
 
                         <td>
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle()}`}
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(app.status)}`}
                           >
-                            REJECTED
+                            {app.status?.replaceAll("_", " ")}
                           </span>
                         </td>
 

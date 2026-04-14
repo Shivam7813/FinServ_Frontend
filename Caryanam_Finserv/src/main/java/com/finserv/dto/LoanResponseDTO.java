@@ -1,9 +1,9 @@
 package com.finserv.dto;
 
 
-import lombok.Data;
-
 import java.time.LocalDate;
+
+import lombok.Data;
 
 @Data
 public class LoanResponseDTO {
@@ -15,6 +15,6 @@ public class LoanResponseDTO {
     private Integer tenure;
     private String status;
     private LocalDate createdDate;
-
+    private String customerName;
 
 }

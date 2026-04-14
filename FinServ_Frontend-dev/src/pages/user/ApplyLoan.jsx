@@ -94,9 +94,29 @@ export default function ApplyLoan() {
         user = {};
       }
 
+      // const payload = {
+      //   ...form,
+      //   fullName: user?.name || form.fullName,
+      // };
       const payload = {
-        ...form,
         fullName: user?.name || form.fullName,
+        mobile: form.mobile,
+        email: form.email,
+        address: form.address,
+        pan: form.pan,
+        aadhaar: form.aadhaar,
+        employmentType: form.employmentType,
+        income: form.income,
+
+        downPayment: form.downPayment,
+        loanAmount: form.loanAmount,
+        tenure: form.tenure,
+
+        // vehicle: {
+        //   carMake: form.carType,        
+        //   model: form.carModel,
+        //   exShowroomPrice: Number(form.carPrice)
+        // }
       };
 
       const response = await applyLoan(payload, prefetchedBankId);
@@ -113,6 +133,19 @@ export default function ApplyLoan() {
         toast.error("Loan created but Loan ID not found!");
         return;
       }
+
+      // 🔥 SAVE VEHICLE (ADD THIS)
+       try {
+          await API.post("/vehicle/save", {
+            loanId: loanId,
+            carMake: form.carType,
+            model: form.carModel,
+            exShowroomPrice: Number(form.carPrice) // 🔥 FIX TYPE
+          });
+        } catch (err) {
+          console.error("Vehicle save failed", err);
+          toast.error("Vehicle details not saved"); // ✅ ADD THIS
+        }
 
       const uploadSafe = async (type, file) => {
         try {
