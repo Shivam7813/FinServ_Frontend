@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import AdminLayout from "../../layouts/AdminLayout";
+import { getStoredUserId } from "../../services/userLoanApi";
 
 // ✅ SERVICE
 import { getUserApplications } from "../../services/userService";
@@ -21,15 +22,19 @@ export default function MyApplications() {
     setSearchParams(value.trim() ? { q: value } : {}, { replace: true });
   };
 
+  console.log("Stored User:", JSON.parse(localStorage.getItem("user")));
+  console.log("Resolved User ID:", getStoredUserId());
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem("user"));
+        const userId = getStoredUserId();
 
-        if (!user) return;
+      if (!userId) {
+        console.error("User ID not found");
+        return;
+      }
 
-        const lookupName = user.name || user.email;
-        const data = await getUserApplications(lookupName);
+      const data = await getUserApplications();
 
         // 🔥 FORMAT DATA TO MATCH UI (API-backed)
         const formatted = data.map((app) => ({

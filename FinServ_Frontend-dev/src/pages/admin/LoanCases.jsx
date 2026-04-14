@@ -254,7 +254,7 @@ export default function LoanCases() {
                     <th>Amount</th>
                     <th>Bank</th>
                     <th>Status</th>
-                    <th>Admin remark</th>
+                    {/* <th>Admin remark</th> */}
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -289,11 +289,11 @@ export default function LoanCases() {
                             {String(app.status || "").replaceAll("_", " ")}
                           </span>
                         </td>
-                        <td className="max-w-[200px] truncate text-xs text-gray-600" title={app.adminRemark || ""}>
+                        {/* <td className="max-w-[200px] truncate text-xs text-gray-600" title={app.adminRemark || ""}>
                           {app.status === "REJECTED_BY_ADMIN" && app.adminRemark
                             ? app.adminRemark
                             : "—"}
-                        </td>
+                        </td> */}
                         <td className="py-3">
                           <div className="flex flex-wrap gap-2 text-xs">
                             <button

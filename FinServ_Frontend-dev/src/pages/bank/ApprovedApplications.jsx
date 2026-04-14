@@ -4,15 +4,22 @@ import { useEffect, useState, useMemo } from "react";
 
 import { getLoans } from "../../services/loanService";
 import { useAuth } from "../../context/AuthContext";
+import { useSearchParams } from "react-router-dom";
 
 export default function ApprovedApplications() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const [search, setSearch] = useState("");
+  
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
 
+const setSearchQuery = (value) => {
+  setSearch(value);
+  setSearchParams(value.trim() ? { q: value } : {}, { replace: true });
+};
   // ✅ normalize helper
   const normalize = (str) =>
     (str || "").toLowerCase().replace(/\s+/g, "").trim();
@@ -25,20 +32,8 @@ export default function ApprovedApplications() {
 
         const data = await getLoans();
 
-        const bankName = normalize(
-          user?.bankName || user?.name || user?.email?.split("@")[0]
-        );
-
-        const filtered = data.filter((loan) => {
-          const loanBank = normalize(loan.bank);
-
-          return (
-            loanBank.includes(bankName) ||
-            bankName.includes(loanBank)
-          );
-        });
-
-        setApplications(filtered);
+        // ✅ STORE RAW DATA ONLY
+        setApplications(data || []);
 
       } catch (error) {
         console.error("Error fetching approved applications:", error);
@@ -48,21 +43,35 @@ export default function ApprovedApplications() {
     };
 
     fetchData();
-  }, []);
+  }, [user]);
+
 
   // ✅ FILTER ONLY APPROVED + SEARCH
   const filteredApps = useMemo(() => {
-    return applications.filter((app) => {
+  return applications.filter((app) => {
 
-      const haystack =
-        `${app.fullName} ${app.caseNumber} ${app.mobile} ${app.loanType} ${app.bank} ${app.loanAmount}`.toLowerCase();
+    // ✅ BANK MATCH
+    const loanBank = normalize(app.bank);
+    const userBank = normalize(
+      user?.bankName || user?.name || user?.email?.split("@")[0]
+    );
 
-      const matchesSearch =
-        !search.trim() || haystack.includes(search.toLowerCase());
+    const isSameBank =
+      loanBank.includes(userBank) || userBank.includes(loanBank);
 
-      return matchesSearch && app?.status === "APPROVED";
-    });
-  }, [applications, search]);
+        // ✅ STATUS
+        const isApproved = app?.status === "APPROVED";
+
+        // ✅ SEARCH
+        const haystack =
+          `${app.fullName} ${app.caseNumber} ${app.mobile} ${app.loanType} ${app.bank} ${app.loanAmount}`.toLowerCase();
+
+        const matchesSearch =
+          !search.trim() || haystack.includes(search.toLowerCase());
+
+        return isSameBank && isApproved && matchesSearch;
+      });
+    }, [applications, search, user]);
 
   // ✅ STATUS STYLE SAME AS APPLICATIONS
   const getStatusStyle = (status) => {
@@ -161,11 +170,9 @@ export default function ApprovedApplications() {
 
                         <td>
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(
-                              "APPROVED"
-                            )}`}
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(app.status)}`}
                           >
-                            APPROVED
+                            {app.status?.replaceAll("_", " ")}
                           </span>
                         </td>
 

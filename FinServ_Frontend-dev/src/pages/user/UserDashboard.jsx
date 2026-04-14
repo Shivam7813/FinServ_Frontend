@@ -126,13 +126,13 @@ export default function UserDashboard() {
             + Apply Loan
           </button>
 
-          <button
+          {/* <button
             type="button"
             onClick={handleUploadDocs}
             className="bg-blue-500 text-white px-5 py-2.5 rounded-lg shadow-sm hover:bg-blue-600 transition"
           >
             Upload Documents
-          </button>
+          </button> */}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -165,7 +165,7 @@ export default function UserDashboard() {
                       Loan ID
                     </th>
                     <th className="text-left font-medium py-3 px-4 align-middle">
-                      Loan Type
+                      Vehicle
                     </th>
                     <th className="text-left font-medium py-3 px-4 align-middle">
                       Amount
@@ -219,9 +219,9 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md border border-gray-100">
-          <div className="p-5 sm:p-6 md:p-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">
+        {/* <div className="bg-white rounded-xl shadow-md border border-gray-100">
+          <div className="p-5 sm:p-6 md:p-8"> */}
+            {/* <h3 className="text-lg font-semibold text-gray-900 mb-6">
               Application Progress
             </h3>
 
@@ -230,11 +230,11 @@ export default function UserDashboard() {
               <div className="text-green-600 font-medium">✔ Documents Uploaded</div>
               <div className="text-yellow-600 font-medium">⏳ Under Review</div>
               <div className="text-gray-400">Pending Approval</div>
-              <div className="text-gray-400">Disbursed</div>
+              <div className="text-gray-400">Disbursed</div> */}
             </div>
-          </div>
-        </div>
-      </div>
+            {/* </div>
+          </div> */}
+      {/* </div> */}
     </AdminLayout>
   );
 }

@@ -152,12 +152,12 @@ export default function Applications() {
               <tbody className="text-gray-700">
                 {filteredApps.map((app) => {
 
-                  const name = app?.fullName || "N/A";
-                  const loanType = app?.loanType || "—";
-                  const amount = app?.loanAmount || 0;
-                  const status = app?.status || "PENDING";
-                  const caseNumber = app?.caseNumber || "—";
-                  const bank = app?.bank || "—";
+                  const name = app.fullName;
+                  const loanType = app.loanType;
+                  const amount = app.loanAmount;
+                  const status = app.status;
+                  const caseNumber = app.caseNumber;
+                  const bank = app.bank;
 
                   return (
                     <tr
