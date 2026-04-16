@@ -21,24 +21,30 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
 
     @Query("""
     SELECT new com.finserv.dto.LoanDashboardDTO(
-        l.caseNumber,
-        pd.fullName,
-        u.mobileNumber,
-        CONCAT(v.carMake, ' ', v.model),
-        l.loanAmount,
-        b.bankName,
-        l.status,
-        l.loanType,
-        l.createdDate
-        
+    l.caseNumber,
+    pd.fullName,
+    u.mobileNumber,
+    pd.email,
+    CONCAT(v.carMake, ' ', v.model),
+    l.loanAmount,
+    l.downPayment,
+    l.tenure,
+    e.employmentType,
+    b.bankName,
+    l.status,
+    l.loanType,
+    l.createdDate,
+    NULL,
+    l.adminRemark
     )
     FROM LoanApplication l
     JOIN l.user u
     LEFT JOIN u.personalDetails pd
+    LEFT JOIN u.employmentDetails e
     LEFT JOIN l.vehicle v
     LEFT JOIN l.bank b
     WHERE l.isDeleted = false
-""")
+    """)
     List<LoanDashboardDTO> getAllLoanCases();
 
     //Optional<LoanApplication> findByCaseNumber(String caseNumber);

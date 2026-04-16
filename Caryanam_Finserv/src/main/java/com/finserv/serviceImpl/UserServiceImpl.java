@@ -49,6 +49,7 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         user.setEmail(dto.getEmail());
         user.setMobileNumber(dto.getMobileNumber());
+        user.setFullName(dto.getFullName()); // ✅ ADD THIS LINE
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         user.setRole(dto.getRole() != null ? dto.getRole() : Role.USER);
         user.setCreatedAt(LocalDateTime.now());
@@ -185,7 +186,11 @@ public class UserServiceImpl implements UserService {
         return UserResponseDTO.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
-                .fullName(user.getFullName())
+                .fullName(
+                user.getPersonalDetails() != null
+                    ? user.getPersonalDetails().getFullName()
+                    : user.getFullName()
+                )
                 .role(user.getRole())
                 .build();
     }

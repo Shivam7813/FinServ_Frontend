@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 public class LoanResponseDTO {
-    private Long loanid;
+    private Long loanId;
     private String caseNumber;
     private String loanType;
     private Double loanAmount;

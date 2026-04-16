@@ -12,4 +12,5 @@ import java.util.List;
 public interface PersonalDetailsRepository extends JpaRepository<PersonalDetails, Long> {
 
     List<PersonalDetails> findByFullNameContainingIgnoreCase(String name);
+    PersonalDetails findByUserId(Long userId);
 }

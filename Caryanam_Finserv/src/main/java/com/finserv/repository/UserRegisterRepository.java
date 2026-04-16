@@ -1,9 +1,10 @@
 package com.finserv.repository;
 
-import com.finserv.entity.UserRegister;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.finserv.entity.UserRegister;
 
 public interface UserRegisterRepository extends JpaRepository<UserRegister, Long> {
 

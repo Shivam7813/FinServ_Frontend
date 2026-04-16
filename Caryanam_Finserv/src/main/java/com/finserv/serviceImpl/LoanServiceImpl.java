@@ -64,8 +64,12 @@ public class LoanServiceImpl implements LoanService {
 
         User user = userRepo.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        Bank bank = bankRepo.findById(dto.getBankId())
-                .orElseThrow(() -> new RuntimeException("Bank not found"));
+        Bank bank = null;
+
+            if (dto.getBankId() != null) {
+                bank = bankRepo.findById(dto.getBankId())
+                        .orElseThrow(() -> new RuntimeException("Bank not found"));
+            }
         LoanType loanType;
         try {
             loanType = LoanType.valueOf(dto.getLoanType().toUpperCase());
@@ -99,7 +103,7 @@ public class LoanServiceImpl implements LoanService {
         emailService.sendEmail(user.getEmail(), subject, body);
 
         LoanResponseDTO response = new LoanResponseDTO();
-        response.setLoanid(saved.getId());
+        response.setLoanId(saved.getId());
         response.setCaseNumber(saved.getCaseNumber());
         response.setLoanType(saved.getLoanType().name());
         response.setLoanAmount(saved.getLoanAmount());
@@ -163,18 +167,28 @@ public class LoanServiceImpl implements LoanService {
             }
 
             LoanDashboardDTO dto = new LoanDashboardDTO(
-                    l.getCaseNumber(),
-                    fullName,
-                    mobile,
-                    vehicle,
-                    l.getLoanAmount(),
-                    bankName,
-                    l.getStatus(),
-                    l.getLoanType(),
-                    l.getCreatedDate(),
-                    missingDocuments,
-                    l.getAdminRemark()
+                l.getCaseNumber(),
+                fullName,
+                mobile,
+                l.getUser() != null && l.getUser().getPersonalDetails() != null
+                    ? l.getUser().getPersonalDetails().getEmail()
+                    : null,
+                vehicle,
+                l.getLoanAmount(),
+                l.getDownPayment(),
+                l.getTenure(),
+                l.getUser() != null && l.getUser().getEmploymentDetails() != null
+                    ? l.getUser().getEmploymentDetails().getEmploymentType()
+                    : null,
+
+                bankName,
+                l.getStatus(),
+                l.getLoanType(),
+                l.getCreatedDate(),
+                missingDocuments,
+                l.getAdminRemark()
             );
+
 
             result.add(dto);
         }
@@ -454,18 +468,28 @@ if (l.getUser() != null) {
         //         l.getAdminRemark()
         // );
         return new LoanDashboardDTO(
-        l.getCaseNumber(),
-        fullName,
-        mobile,
-        vehicle,
-        l.getLoanAmount(),
-        bank,
-        l.getStatus(),
-        l.getLoanType(),
-        l.getCreatedDate(),
-        missingDocs,
-        l.getAdminRemark()
-);
+            l.getCaseNumber(),
+            fullName,
+            mobile,
+            l.getUser() != null && l.getUser().getPersonalDetails() != null
+                ? l.getUser().getPersonalDetails().getEmail()
+                : null,
+            vehicle,
+            l.getLoanAmount(),
+            l.getDownPayment(),
+            l.getTenure(),
+            l.getUser() != null && l.getUser().getEmploymentDetails() != null
+                ? l.getUser().getEmploymentDetails().getEmploymentType()
+                : null,
+
+            bank,
+            l.getStatus(),
+            l.getLoanType(),
+            l.getCreatedDate(),
+            missingDocs,
+            l.getAdminRemark()
+        );
+
     }
 
     @Override
