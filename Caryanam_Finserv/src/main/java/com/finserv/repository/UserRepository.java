@@ -21,7 +21,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     SELECT new com.finserv.dto.CustomerDashboardDTO(
     u.id,
-    p.fullName,
+    COALESCE(p.fullName, u.fullName),
     u.email,
     u.mobileNumber,
     p.panNumber,

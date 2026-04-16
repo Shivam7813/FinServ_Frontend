@@ -55,41 +55,4 @@ public class UserRegisterController {
         return ResponseEntity.ok(response);
     }
 
-    // ================= VERIFY OTP =================
-    @PostMapping("/verify-otp")
-    public ResponseEntity<OtpVerifyResponseDTO> verifyOtp(
-            @Valid @RequestBody OtpRequestDTO request) {
-
-        // ✅ NULL CHECK
-        if (request == null) {
-            throw new BadRequestException("Request body is missing");
-        }
-
-        // ✅ MOBILE VALIDATION
-        if (request.getMobileNumber() == null || request.getMobileNumber().isBlank()) {
-            throw new BadRequestException("Mobile number is required");
-        }
-
-        if (!request.getMobileNumber().matches("^[0-9]{10}$")) {
-            throw new BadRequestException("Invalid mobile number");
-        }
-
-        // ✅ OTP VALIDATION
-        if (request.getOtp() == null || request.getOtp().isBlank()) {
-            throw new BadRequestException("OTP is required");
-        }
-
-        if (!request.getOtp().matches("^[0-9]{4,6}$")) {
-            throw new BadRequestException("OTP must be 4 to 6 digits");
-        }
-
-        String msg = userRegisterService.verifyOtp(
-                request.getMobileNumber(),
-                request.getOtp()
-        );
-
-        return ResponseEntity.ok(
-                new OtpVerifyResponseDTO(msg, request.getMobileNumber())
-        );
-    }
-}
+       }

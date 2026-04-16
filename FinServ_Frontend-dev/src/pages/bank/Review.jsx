@@ -1,8 +1,8 @@
 import AdminLayout from "../../layouts/AdminLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-// import axios from "axios";
-// import { API_BASE_URL } from "../../config/apiBase";
+import axios from "axios";
+import { API_BASE_URL } from "../../config/apiBase";
 import { fetchAdminDocumentDashboard } from "../../services/documentService";
 import { adminRejectCase } from "../../services/loanService";
 import { getLoans } from "../../services/loanService";
@@ -47,7 +47,12 @@ export default function Review() {
             return;
           }
 
-          setApplication(found);
+          setApplication({
+            ...found,
+            employmentType: found.employmentType || found.employment_type,
+            tenure: found.tenure || found.loanTenure,
+            downPayment: found.downPayment || found.down_payment
+          });
           setStatus(found.status);
 
           let docs = [];
@@ -201,35 +206,102 @@ export default function Review() {
       </button>
 
      {/* 🔥 TOP SUMMARY BAR */}
-<div className="bg-white rounded-2xl shadow p-6 flex justify-between items-center flex-wrap gap-4 border">
 
-  <div>
-    <h2 className="text-xl font-semibold text-gray-800">
-    {application?.fullName}
-  </h2>
+      <div className="bg-white rounded-2xl shadow p-6 border flex flex-col lg:flex-row justify-between gap-6">
 
-    <p className="text-gray-500 text-sm mt-1">
-      {application?.loanType || "N/A"} • ₹{Number(application?.loanAmount || 0).toLocaleString()}
-    </p>
+      {/* LEFT: USER INFO */}
 
-    <p className="text-xs text-gray-400 mt-1">
-      Submitted: {application?.submittedAt || "N/A"}
-    </p>
-  </div>
+        <div className="space-y-3">
 
-  {application?.adminRemark && (
-    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-gray-700">
-      <strong>Remark:</strong> {application?.adminRemark}
-    </div>
-  )}
 
-  <span
-    className={`px-4 py-1 rounded-full text-sm font-semibold ${getStatusStyle(status)}`}
-  >
-    {formatStatus(status)}
-  </span>
+      <div>
+        <h2 className="text-2xl font-semibold text-gray-800">
+          {application?.fullName || "User"}
+        </h2>
 
-</div>
+        <p className="text-sm text-gray-500 mt-1">
+          {application?.loanType || "N/A"} • ₹{Number(application?.loanAmount || 0).toLocaleString()}
+        </p>
+      </div>
+
+      <div className="text-xs text-gray-400">
+        Case: <span className="font-medium text-gray-600">{application?.caseNumber || "N/A"}</span>  
+        {" • "}
+        {application?.submittedAt || "N/A"}
+      </div>
+
+      <div className="text-sm text-gray-600 flex flex-wrap gap-4">
+        <span>📞 {application?.mobile || "N/A"}</span>
+        <span>📧 {application?.email || "N/A"}</span>
+      </div>
+
+
+        </div>
+
+      {/* CENTER: METRICS CARDS */}
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 flex-1">
+
+
+      {/* <div className="bg-gray-50 hover:bg-gray-100 transition p-4 rounded-xl text-sm">
+        <p className="text-gray-400 text-xs">Employment</p>
+        <p className="font-semibold text-gray-800">
+          {application?.employmentType || "N/A"}
+        </p>
+      </div>
+
+      <div className="bg-gray-50 hover:bg-gray-100 transition p-4 rounded-xl text-sm">
+        <p className="text-gray-400 text-xs">Tenure</p>
+        <p className="font-semibold text-gray-800">
+          {application?.tenure || "N/A"} months
+        </p>
+      </div>
+
+      <div className="bg-gray-50 hover:bg-gray-100 transition p-4 rounded-xl text-sm">
+        <p className="text-gray-400 text-xs">Down Payment</p>
+        <p className="font-semibold text-gray-800">
+          ₹{Number(application?.downPayment || 0).toLocaleString()}
+        </p>
+      </div>
+
+      <div className="bg-gray-50 hover:bg-gray-100 transition p-4 rounded-xl text-sm">
+        <p className="text-gray-400 text-xs">Loan Amount</p>
+        <p className="font-semibold text-gray-800">
+          ₹{Number(application?.loanAmount || 0).toLocaleString()}
+        </p>
+      </div> */}
+
+      <div className="bg-gray-50 hover:bg-gray-100 transition p-4 rounded-xl text-sm">
+        <p className="text-gray-400 text-xs">Status</p>
+        <p className="font-semibold text-gray-800">
+          {formatStatus(status)}
+        </p>
+      </div>
+
+
+        </div>
+
+      {/* RIGHT: STATUS BADGE */}
+
+        <div className="flex flex-col items-end justify-between">
+
+
+      {/* <span
+        className={`px-5 py-2 rounded-full text-sm font-semibold shadow-sm ${getStatusStyle(status)}`}
+      >
+        {formatStatus(status)}
+      </span> */}
+
+      {application?.adminRemark && (
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-gray-700 max-w-xs">
+          <strong>Remark:</strong> {application?.adminRemark}
+        </div>
+      )}
+
+
+        </div>
+
+      </div>
 
       {/* 🔥 DOCUMENTS (ADMIN TABLE STYLE) */}
 <div className="bg-white rounded-2xl shadow p-6 border">
@@ -339,13 +411,6 @@ export default function Review() {
             Reject
           </button>
 
-          {/* <button
-            onClick={() => handleUpdate("UNDER_REVIEW")}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
-          >
-            Under Review
-          </button> */}
-
           <button
             onClick={() => setShowRemarkModal(true)}
             className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
@@ -355,11 +420,10 @@ export default function Review() {
         </div>
       </div>
 
-      {/* PREVIEW MODAL (UNCHANGED) */}
       
       
 
-      {/* REMARK MODAL (UNCHANGED) */}
+      {/* REMARK MODAL */}
       {showRemarkModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div

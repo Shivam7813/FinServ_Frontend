@@ -1,5 +1,8 @@
 package com.finserv.serviceImpl;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.finserv.dto.VehicleRequestDTO;
 import com.finserv.dto.VehicleResponseDTO;
 import com.finserv.entity.LoanApplication;
@@ -8,9 +11,6 @@ import com.finserv.exception.ResourceNotFoundException;
 import com.finserv.repository.LoanApplicationRepository;
 import com.finserv.repository.VehicleRepository;
 import com.finserv.service.VehicleService;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 @Service
 public class VehicleServiceImpl implements VehicleService {

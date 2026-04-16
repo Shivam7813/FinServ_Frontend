@@ -29,6 +29,19 @@ public class JwtFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
+                
+            String path = request.getServletPath();
+            // ✅ SKIP JWT for public APIs
+            if (
+                path.startsWith("/auth") ||
+                path.startsWith("/api/loans") ||
+                path.startsWith("/api/vehicle") ||
+                path.startsWith("/api/documents") ||
+                path.startsWith("/api/banks")
+            ) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
         // 🔥🔥🔥 IMPORTANT FIX: ALLOW PREFLIGHT (CORS)
         if (request.getMethod().equalsIgnoreCase("OPTIONS")) {

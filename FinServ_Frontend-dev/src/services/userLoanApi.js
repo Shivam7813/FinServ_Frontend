@@ -296,3 +296,9 @@ export async function fetchBanks() {
   const res = await API.get("/banks/getAll");
   return Array.isArray(res.data) ? res.data : [];
 }
+
+
+export async function saveUserProfileApi(payload) {
+const res = await API.post("/profile/save", payload);
+return res.data;
+}
